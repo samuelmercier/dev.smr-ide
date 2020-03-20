@@ -1,0 +1,291 @@
+html {
+	height:100%;
+	margin: 0;
+	padding: 0;
+}
+body {
+	background: #202020;
+	color: gray;
+	font-family: Helvetica,"Segoe UI",Sans;
+	height: 100%;
+	margin: 0;
+	overflow: hidden;
+	padding: 0;
+	position: relative;
+}
+
+.UIWorkbench {
+	box-sizing: border-box;
+	height: 100%;
+	padding-left: 320px;
+	position: relative;
+	width: 100%;
+}
+.UIWorkbench > .left {
+	height: 100%;
+	left: 0;
+	position: absolute;
+	width: 320px;
+}
+.UIWorkbench > .right {
+	box-sizing: border-box;
+	height: 100%;
+	padding-top: 320px;
+	position: relative;
+	width: 100%;
+}
+.UIWorkbench > .right > .top {
+	box-sizing: border-box;
+	height: 320px;
+	padding-bottom: 0.4em;
+	padding-left: 0.4em;
+	position: absolute;
+	top: 0;
+	width: 100%;
+}
+.UIWorkbench > .right > .top > .resizeh {
+	background: #404040;
+	cursor: ew-resize;
+	height: 100%;
+	left: 0;
+	position: absolute;
+	top: 0;
+	width: 0.4em;
+}
+.UIWorkbench > .right > .top > .resizev {
+	background: #404040;
+	bottom: 0;
+	cursor: ns-resize;
+	height: 0.4em;
+	left: 0;
+	position: absolute;
+	width: 100%;
+}
+.UIWorkbench > .right > .top > .resizehv {
+	background: #404040;
+	bottom: 0;
+	cursor: all-scroll;
+	height: 0.4em;
+	left: 0;
+	position: absolute;
+	width: 0.4em;
+}
+.UIWorkbench > .right > .bottom {
+	bottom: 0;
+	box-sizing: border-box;
+	height: 100%;
+	padding-left: 0.4em;
+	position: relative;
+	width: 100%;
+}
+.UIWorkbench > .right > .bottom > .resizeh {
+	background: #404040;
+	cursor: ew-resize;
+	height: 100%;
+	left: 0;
+	position: absolute;
+	width: 0.4em;
+}
+
+.UIContextMenu {
+	background: #404040;
+	padding: 0.2em;
+	display: inline-block;
+	position: absolute;
+	user-select: none;
+}
+.UIContextMenu > .item {
+	padding: 0.1em 0.4em;
+}
+.UIContextMenu > .item:hover {
+	background: #202020;
+	color: lightgray;
+}
+
+.UITextEditor {
+	background: transparent;
+	border: none;
+	color: lightgray;
+	height: 100%;
+	margin: 0;
+	padding: 0;
+	resize: none;
+	width: 100%;
+}
+
+.UIPopupDialog {
+	height: 100%;
+	left: 0;
+	position: absolute;
+	top: 0;
+	width: 100%;
+}
+.UIPopupDialog > .curtain {
+	background: gray;
+	height: 100%;
+	left: 0;
+	opacity: 0.5;
+	position: absolute;
+	top: 0;
+	width: 100%;
+}
+.UIPopupDialog > .dialog {
+	background: #202020;
+	position: absolute;
+	left: 0;
+	top: 0;
+}
+.UIPopupDialog > .dialog > .header {
+	box-sizing: border-box;
+	font-size: 120%;
+	overflow: hidden;
+	padding: 0.4em 0.4em 0.4em 0.4em;
+	position: absolute;
+	text-overflow: ellipsis;
+	top: 0;
+	user-select: none;
+	width: 100%;
+}
+.UIPopupDialog > .dialog > .container {
+	box-sizing: border-box;
+	height: 100%;
+	overflow: auto;
+	padding: 0 0.4em 0 0.4em;
+	width: 100%;
+}
+.UIPopupDialog > .dialog > .footer {
+	bottom: 0;
+	box-sizing: border-box;
+	overflow: hidden;
+	padding: 0.8em;
+	position: absolute;
+	text-align: right;
+	width: 100%;
+}
+.UIPopupDialog > .dialog > .footer > .container {
+	display: inline-block;
+	padding-left: 0.8em;
+}
+
+
+
+.UITable {
+	box-sizing: border-box;
+	height: 100%;
+	position: relative;
+	user-select: none;
+	width: 100%;
+}
+.UITable > .header {
+	overflow: hidden;
+	position: absolute;
+	top: 0;
+	white-space: nowrap;
+	width: 100%;
+}
+.UITable > .header > .column {
+	display: inline-block;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.UITable > .container {
+	width: 100%;
+	height: 100%;
+	overflow: auto;
+}
+.UITable > .container > .row {
+	display: block;
+	min-width: 100%;
+	white-space: nowrap;
+}
+.UITable > .container > .row > .cell {
+	display: inline-block;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.UITable > .container > .row[selected="selected"] > .cell {
+	background: gray;
+	color: lightgray;
+}
+
+
+
+.UITree {
+	height: 100%;
+	overflow: auto;
+	user-select: none;
+	width: 100%;
+}
+.UITree > .table {
+	display: table;
+	width: 100%;
+}
+.UITree > .table > .row { display: table-row; }
+.UITree > .table > .row > .cell { display: table-cell; }
+
+.UITreeItem {}
+.UITreeItem > .header {
+	white-space: nowrap;
+}
+.UITreeItem > .header > .button {
+	display: inline-block;
+	font-family: mono;
+}
+.UITreeItem > .header > .title { display: inline-block; }
+.UITreeItem > .container {}
+.UITreeItem > .header > .button::before { content: "\00a0\00a0" }
+.UITreeItem[expanded="false"] > .container { display: none; }
+.UITreeItem[expanded="false"] > .header > .button::before { content: "\00a0+\00a0" }
+.UITreeItem[expanded="true"] > .container { display: block; }
+.UITreeItem[expanded="true"] > .header > .button::before { content: "\00a0-\00a0" }
+.UITreeItem[selected="selected"] > .header {
+	background: gray;
+	color: lightgray;
+}
+
+.UIContainer {
+	box-sizing: border-box;
+	display: block;
+	height: 100%;
+	padding: 0 0.4em 0 0.4em;
+	width: 100%;
+}
+
+.UIInput {
+	background: #404040;
+	border: none;
+	color: lightgray;
+	display: block;
+	width: 100%;
+}
+.UILabel {
+	padding: 0.4em 0 0 0;
+	user-select: none;
+}
+.UIToolbarContainer {
+	box-sizing: border-box;
+	height: 100%;
+	position: relative;
+	width: 100%;
+}
+.UIToolbarContainer > .toolbar {
+	background: #484848;
+	position: absolute;
+	top: 0;
+	width: 100%;
+}
+.UIToolbarContainer > .toolbar > .action {
+	padding: 0 0.4em 0 0.4em;
+	color: black;
+	background: #686868;
+	display: inline-block;
+	user-select: none;
+}
+.UIToolbarContainer > .toolbar > .action:hover { background: transparent; }
+.UIToolbarContainer > .container {
+	height: 100%;
+	position: relative;
+	width: 100%;
+}
