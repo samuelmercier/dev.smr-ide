@@ -370,6 +370,40 @@
 			.assertNoMoreDiagnostic();
 	});
 
+	Tests.run(function testParseSource() {
+		const source=Compiler.parseJavascript("sourceId", "/*\n*/\nvar a/*\n*/\n = /*\n*/\n 1 /*\n*/\n;/*\n*/\n");
+		const statement=source.statementTrees[0];
+
+		Assertions.assertEqual(source.id, "sourceId");
+
+		Assertions.assertEqual(source.lines.length, 11);
+		Assertions.assertEqual(source.lines[0], 0);
+		Assertions.assertEqual(source.lines[1], 3);
+		Assertions.assertEqual(source.lines[2], 6);
+		Assertions.assertEqual(source.lines[3], 14);
+		Assertions.assertEqual(source.lines[4], 17);
+		Assertions.assertEqual(source.lines[5], 23);
+		Assertions.assertEqual(source.lines[6], 26);
+		Assertions.assertEqual(source.lines[7], 32);
+		Assertions.assertEqual(source.lines[8], 35);
+		Assertions.assertEqual(source.lines[9], 39);
+		Assertions.assertEqual(source.lines[10], 42);
+
+		Assertions.assertEqual(statement.keywordToken.offset, 6);
+		Assertions.assertEqual(statement.declaratorTrees[0].nameToken.offset, 10);
+		Assertions.assertEqual(statement.declaratorTrees[0].initializerTree.assignToken.offset, 18);
+		Assertions.assertEqual(statement.declaratorTrees[0].initializerTree.expressionTree.token.offset, 27);
+		Assertions.assertEqual(statement.semicolonToken.offset, 35);
+		Assertions.assertEqual(source.endOfInputToken.offset, 42);
+
+		Assertions.assertEqual(statement.keywordToken.line, 3);
+		Assertions.assertEqual(statement.declaratorTrees[0].nameToken.line, 3);
+		Assertions.assertEqual(statement.declaratorTrees[0].initializerTree.assignToken.line, 5);
+		Assertions.assertEqual(statement.declaratorTrees[0].initializerTree.expressionTree.token.line, 7);
+		Assertions.assertEqual(statement.semicolonToken.line, 9);
+		Assertions.assertEqual(source.endOfInputToken.line, 11);
+	});
+
 	Tests.run(function testParseStatementBlock() {
 		const tree=parseSingleStatement("block", "{ ; }");
 		Assertions.assertUndefined(tree.labelTrees);

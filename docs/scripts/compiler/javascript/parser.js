@@ -5,7 +5,6 @@
 As a consumer you should only call the Compiler.parseJavascript(sourceId, input) function
 to parse a javascript source file with:
 	* sourceId: a unique identifier for the source file.
-		the parser treats this as an opaque value passed to Token and Diagnostic
 	* input: a string representation of the source file.
 */
 function defineJavascriptParser(Compiler) {
@@ -145,25 +144,34 @@ function defineJavascriptParser(Compiler) {
 	JavascriptParser.parse=Object.freeze(function(sourceId, input) {
 
 		const diagnostics=[];
+		const lines=[ 0 ];
 		let offset=0;
+		const source=new Compiler.JavascriptTrees.Source(sourceId, diagnostics, lines, []);
 		let trivias;
 
-		return parseSource();
+		try {
+			scanTrivia();
+			while((source.endOfInputToken=checkEndOfInput())===undefined)
+				source.statementTrees.push(parseStatementOrDeclaration());
+		} catch(e) {
+			if(!(e instanceof JavascriptParser.SyntaxError))
+				throw e;
+			diagnostics.push(e.diagnostic);
+		}
+		source.buildScope();
+		source.references=[];
+		source.resolve();
+		return Object.freeze(source);
 
 		/*** helper functions. *** */
 
 		function raise(expected) {
-			throw new JavascriptParser.SyntaxError({
-				message:"syntax error: expected "+expected,
-				positionStart:offset,
-				positionEnd:offset,
-				sourceId:sourceId
-			});
+			throw new JavascriptParser.SyntaxError(new Compiler.newDiagnostic(sourceId, lines.length, offset, offset, "syntax error: expected "+expected));
 		}
 
 		/* instantiates and registers a new diagnostic. */
 		function newDiagnostic(positionStart, positionEnd, message) {
-			diagnostics.push(Compiler.newDiagnostic(sourceId, positionStart, positionEnd, message));
+			diagnostics.push(Compiler.newDiagnostic(sourceId, lines.length, positionStart, positionEnd, message));
 		}
 
 		/* *** scanner part. *** */
@@ -175,13 +183,13 @@ function defineJavascriptParser(Compiler) {
 				if(offset>=input.length||input.charCodeAt(offset)===10) {
 					newDiagnostic(start, offset, "syntax error: unterminated character constant");
 					const text=input.substring(start, offset);
-					const result=Compiler.newToken(sourceId, trivias, start, text, unescapeString(text.substring(1)));
+					const result=Compiler.newToken(source, trivias, lines.length, start, text, unescapeString(text.substring(1)));
 					scanTrivia();
 					return result;
 				}
 				else if(input.charCodeAt(offset)===39) { // '
 					const text=input.substring(start, ++offset);
-					const result=Compiler.newToken(sourceId, trivias, start, text, unescapeString(text.substring(1, text.length-1)));
+					const result=Compiler.newToken(source, trivias, lines.length, start, text, unescapeString(text.substring(1, text.length-1)));
 					scanTrivia();
 					return result;
 				}
@@ -190,7 +198,7 @@ function defineJavascriptParser(Compiler) {
 		function checkEndOfInput() {
 			if(offset<input.length)
 				return undefined;
-			return Compiler.newToken(sourceId, trivias, input.length, "", undefined);
+			return Compiler.newToken(source, trivias, lines.length, input.length, "", undefined);
 		}
 
 		function checkIdentifier() {
@@ -201,7 +209,7 @@ function defineJavascriptParser(Compiler) {
 			const identifier=input.substring(offset, end);
 			if(keywords.has(identifier))
 				return undefined;
-			const result=Compiler.newToken(sourceId, trivias, offset, identifier, undefined);
+			const result=Compiler.newToken(source, trivias, lines.length, offset, identifier, undefined);
 			offset=end;
 			scanTrivia();
 			return result;
@@ -221,7 +229,7 @@ function defineJavascriptParser(Compiler) {
 			while(isident(input.charCodeAt(++end)));
 			if(keyword!==input.substring(end, offset))
 				return undefined;
-			const result=Compiler.newToken(sourceId, trivias, offset, keyword, undefined);
+			const result=Compiler.newToken(source, trivias, lines.length, offset, keyword, undefined);
 			offset=end;
 			scanTrivia();
 			return result;
@@ -242,7 +250,7 @@ function defineJavascriptParser(Compiler) {
 			const keyword=input.substring(end, offset);
 			if(!keywords.has(keyword))
 				return undefined;
-			const result=Compiler.newToken(sourceId, trivias, offset, keyword, undefined);
+			const result=Compiler.newToken(source, trivias, lines.length, offset, keyword, undefined);
 			offset=end;
 			scanTrivia();
 			return result;
@@ -262,7 +270,7 @@ function defineJavascriptParser(Compiler) {
 			} catch(e) {
 				newDiagnostic(start, offset, "invalid number");
 			}
-			const result=Compiler.newToken(sourceId, trivias, start, text, value);
+			const result=Compiler.newToken(source, trivias, lines.length, start, text, value);
 			scanTrivia();
 			return result;
 		}
@@ -281,7 +289,7 @@ function defineJavascriptParser(Compiler) {
 				return undefined;
 			if(punctuators.entries.get(input.charCodeAt(offset+index))!==undefined)
 				return undefined;
-			const result=Compiler.newToken(sourceId, trivias, offset, punctuators.value);
+			const result=Compiler.newToken(source, trivias, lines.length, offset, punctuators.value);
 			offset+=index;
 			scanTrivia();
 			return result;
@@ -298,7 +306,7 @@ function defineJavascriptParser(Compiler) {
 			}
 			if(entry===undefined||!values.has(entry.value))
 				return undefined;
-			const result=Compiler.newToken(sourceId, trivias, offset, entry.value);
+			const result=Compiler.newToken(source, trivias, lines.length, offset, entry.value);
 			offset+=entry.value.length;
 			scanTrivia();
 			return result;
@@ -332,7 +340,7 @@ function defineJavascriptParser(Compiler) {
 			for(const start=offset++; ; offset+=input.charCodeAt(offset)===92&&offset+1<input.length ? 2 : 1)
 				if(offset>input.length||input.charCodeAt(offset)===10) {
 					newDiagnostic(start, input.length, "syntax error: unterminated regex constant");
-					const result=Compiler.newToken(sourceId, trivias, start, input.substring(start), undefined);
+					const result=Compiler.newToken(source, trivias, lines.length, start, input.substring(start), undefined);
 					scanTrivia();
 					return result;
 				}
@@ -345,7 +353,7 @@ function defineJavascriptParser(Compiler) {
 					} catch(e) {
 						newDiagnostic(start, offset, e.message);
 					}
-					const result=Compiler.newToken(sourceId, trivias, start, input.substring(start, offset), regex);
+					const result=Compiler.newToken(source, trivias, lines.length, start, input.substring(start, offset), regex);
 					scanTrivia();
 					return result;
 				}
@@ -358,13 +366,13 @@ function defineJavascriptParser(Compiler) {
 				if(offset>=input.length||input.charCodeAt(offset)===10) {
 					newDiagnostic(start, offset, "syntax error: unterminated string constant");
 					const text=input.substring(start, offset);
-					const result=Compiler.newToken(sourceId, trivias, start, text, unescapeString(input.substring(start+1, offset)));
+					const result=Compiler.newToken(source, trivias, lines.length, start, text, unescapeString(input.substring(start+1, offset)));
 					scanTrivia();
 					return result;
 				}
 				else if(input.charCodeAt(offset)===34) {
 					const text=input.substring(start, ++offset);
-					const result=Compiler.newToken(sourceId, trivias, start, text, unescapeString(input.substring(start+1, offset-1)));
+					const result=Compiler.newToken(source, trivias, lines.length, start, text, unescapeString(input.substring(start+1, offset-1)));
 					scanTrivia();
 					return result;
 				}
@@ -372,15 +380,23 @@ function defineJavascriptParser(Compiler) {
 
 		function scanTrivia() {
 			trivias=[];
-			trivia: while(offset<input.length)
-				switch(input.charCodeAt(offset)) {
-				case 9: // tab
-				case 10: // newline
-				case 32: // space
-					const start=offset;
-					while(iswhite(input.charCodeAt(++offset)));
+			trivia: while(offset<input.length) {
+				const start=offset;
+				white: while(offset<input.length)
+					switch(input.charCodeAt(offset)) {
+					case 10: // newline
+						lines.push(++offset);
+						continue white;
+					case 9: // tab
+					case 32: // space
+						offset+=1;
+						continue white;
+					default:
+						break white;
+					}
+				if(start!==offset)
 					trivias.push({ kind:"white", text:input.substring(start, offset) });
-					continue trivia;
+				switch(input.charCodeAt(offset)) {
 				case 47: // /
 					switch(input.charCodeAt(offset+1)) {
 					case 42: // *
@@ -391,6 +407,8 @@ function defineJavascriptParser(Compiler) {
 								offset+=2;
 								continue trivia;
 							}
+							else if(input.charCodeAt(offset)===10)
+								lines.push(offset+1);
 						newDiagnostic(startn, offset, "syntax error: unterminated comment");
 						trivias.push({ kind:"comment-n", text:input.substring(startn, offset) });
 						continue trivia;
@@ -403,6 +421,7 @@ function defineJavascriptParser(Compiler) {
 				default:
 					return;
 				}
+			}
 		}
 
 		/* *** parser part. *** */
@@ -702,13 +721,12 @@ function defineJavascriptParser(Compiler) {
 			const parameterTrees=[];
 			let precedingCommaToken=undefined;
 			while(expressionTree.kind()==="infix"&&expressionTree.operatorToken.text===",") {
-				if(expressionTree.leftOperandTree.kind()!=="scope-access")
-					throw new JavascriptParser.SyntaxError({
-						message:"syntax error: invalid lambda parameters",
-						positionStart:arrowToken.offset,
-						positionEnd:arrowToken.offset+arrowToken.text.length,
-						sourceId:sourceId
-					});
+				if(expressionTree.leftOperandTree.kind()!=="scope-access") {
+					const offset=arrowToken.offset;
+					throw new JavascriptParser.SyntaxError(Compiler.newDiagnostic(
+						source, lines.length, offset, offset+arrowToken.text.length, "syntax error: invalid lambda parameters"
+					));
+				}
 				parameterTrees.push({
 					precedingCommaToken:precedingCommaToken,
 					nameToken:expressionTree.leftOperandTree.nameToken
@@ -716,13 +734,12 @@ function defineJavascriptParser(Compiler) {
 				precedingCommaToken=expressionTree.operatorToken;
 				expressionTree=expressionTree.rightOperandTree;
 			}
-			if(expressionTree.kind()!=="scope-access")
-				throw new JavascriptParser.SyntaxError({
-					message:"syntax error: invalid lambda parameters",
-					positionStart:arrowToken.offset,
-					positionEnd:arrowToken.offset+arrowToken.text.length,
-					sourceId:sourceId
-				});
+			if(expressionTree.kind()!=="scope-access") {
+				const offset=arrowToken.offset;
+				throw new JavascriptParser.SyntaxError(Compiler.newDiagnostic(
+					source, lines.length, offset, offset+arrowToken.text.length, "syntax error: invalid lambda parameters"
+				));
+			}
 			parameterTrees.push({
 				precedingCommaToken:precedingCommaToken,
 				nameToken:expressionTree.nameToken
@@ -785,21 +802,6 @@ function defineJavascriptParser(Compiler) {
 				closeParenthesisToken=expectPunctuator(")");
 			}
 			return new Compiler.JavascriptTrees.FunctionParameters(openParenthesisToken, parameterTrees, closeParenthesisToken);
-		}
-
-		function parseSource() {
-			const statementTrees=[];
-			let endOfInputToken;
-			try {
-				scanTrivia();
-				while((endOfInputToken=checkEndOfInput())===undefined)
-					statementTrees.push(parseStatementOrDeclaration());
-			} catch(e) {
-				if(!(e instanceof JavascriptParser.SyntaxError))
-					throw e;
-				diagnostics.push(e.diagnostic);
-			}
-			return new Compiler.JavascriptTrees.Source(diagnostics, Object.freeze(statementTrees), endOfInputToken);
 		}
 
 		function parseStatement() {
@@ -870,7 +872,7 @@ function defineJavascriptParser(Compiler) {
 					continue;
 				}
 				throw new JavascriptParser.SyntaxError(Compiler.newDiagnostic(
-					sourceId, colonToken.offset, colonToken.offset+1, "syntax error: expected ';'"
+					source, lines.length, colonToken.offset, colonToken.offset+1, "syntax error: expected ';'"
 				));
 			}
 		}

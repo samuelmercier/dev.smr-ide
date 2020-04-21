@@ -1167,15 +1167,12 @@ function defineJavascriptTrees(Compiler) {
 
 	Trees.Source=Object.freeze(class Source {
 
-		constructor(diagnostics, statementTrees, endOfInputToken) {
+		constructor(id, diagnostics, lines, statementTrees) {
 			this.declarations=new Map();
 			this.diagnostics=diagnostics;
+			this.id=id;
+			this.lines=lines;
 			this.statementTrees=statementTrees;
-			this.endOfInputToken=endOfInputToken;
-			this.buildScope();
-			this.references=[];
-			this.resolve();
-			Object.freeze(this);
 		}
 
 		kind() { return "source"; }
@@ -1223,7 +1220,7 @@ function defineJavascriptTrees(Compiler) {
 		resolveDeclaration(name) { return this.declarations.get(name); }
 
 		newDiagnostic(token, message) {
-			this.diagnostics.push(Compiler.newDiagnostic(token.sourceId, token.offset, token.offset+token.text.length, message));
+			this.diagnostics.push(Compiler.newDiagnostic(token.source, token.line, token.offset, token.offset+token.text.length, message));
 		}
 
 		containsLabel(name) { return false; }
@@ -1231,6 +1228,12 @@ function defineJavascriptTrees(Compiler) {
 		registerScopeAccess(scope, tree) { this.references.push({ scope:scope, tree:tree }); }
 
 		registerVar(analyzer, nameToken) { return this.registerDeclaration(analyzer, nameToken); }
+
+		line(offset) {
+			let i=0;
+			for(; i<this.lines.length&&this.lines[i]<offset; i+=1);
+			return i+1;
+		}
 
 	});
 

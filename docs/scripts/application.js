@@ -332,6 +332,7 @@ function newWorkbench(project) {
 		if(diagnostic!==undefined) {
 			selectTreeItem(diagnostic.sourceId);
 			selectEditor(diagnostic.sourceId, diagnostic.positionStart, diagnostic.positionEnd);
+			selectedResource=diagnostic.sourceId;
 		}
 	}
 
@@ -351,7 +352,7 @@ function newWorkbench(project) {
 				width:"32em"
 			},
 			{
-				initializer:function(diagnostic) { return diagnostic.positionStart; },
+				initializer:function(diagnostic) { return diagnostic.lineIndex; },
 				title:"Location",
 				width:"8em"
 			},

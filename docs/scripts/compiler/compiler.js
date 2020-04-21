@@ -6,8 +6,9 @@ const Compiler=function() {
 	const JavascriptParser=defineJavascriptParser(Compiler);
 	Compiler.JavascriptTrees=defineJavascriptTrees(Compiler);
 
-	Compiler.newDiagnostic=Object.freeze(function newDiagnostic(sourceId, positionStart, positionEnd, message) {
+	Compiler.newDiagnostic=Object.freeze(function newDiagnostic(sourceId, lineIndex, positionStart, positionEnd, message) {
 		return {
+			lineIndex:lineIndex,
 			message:message,
 			positionStart:positionStart,
 			positionEnd:positionEnd,
@@ -15,10 +16,11 @@ const Compiler=function() {
 		};
 	});
 
-	Compiler.newToken=Object.freeze(function(sourceId, trivias, offset, text, value) {
+	Compiler.newToken=Object.freeze(function(source, trivias, line, offset, text, value) {
 		return Object.freeze({
+			line:line,
 			offset:offset,
-			sourceId:sourceId,
+			source:source,
 			text:text,
 			trivias:trivias,
 			value:value,
@@ -71,7 +73,7 @@ const Compiler=function() {
 	Compiler.analyzeJavascript=Object.freeze(function(scope, sourceTrees) {
 
 		function newDiagnostic(token, message) {
-			diagnostics.push(Compiler.newDiagnostic(token.sourceId, token.offset, token.offset+token.text.length, message));
+			diagnostics.push(Compiler.newDiagnostic(token.source.id, token.line, token.offset, token.offset+token.text.length, message));
 		}
 
 		const diagnostics=[];
