@@ -44,12 +44,37 @@ const System=defineSystem(function () {
 		+"	return Object.freeze(octopus);\n\n"
 		+"}();\n"
 	);
+	window.sessionStorage.setItem("293f21da-70ca-4335-9000-de9c556f4b10",
+		"/* *** library https://raw.githubusercontent.com/samuelmercier/octopus-samples/testing-1.1/testing/index.html *** */\n\n"
+		+"/* *** https://raw.githubusercontent.com/samuelmercier/octopus-samples/testing-1.1/testing/scripts/testing.js *** */\n\n"
+		+"\"use strict\";\n\n"
+		+"octopus.define(\"octopus/testing\", function(definition) {\n\n"
+		+"	definition.diagnostics=[];\n\n"
+		+"	definition.run=function(testFunction) {\n"
+		+"		const start=performance.now();\n"
+		+"		try {\n"
+		+"			testFunction();\n"
+		+"			definition.diagnostics.push({ name:testFunction.name, duration:performance.now()-start, status:\"pass\" });\n"
+		+"		} catch(e) {\n"
+		+"			definition.diagnostics.push({ name:testFunction.name, duration:performance.now()-start, status:\"fail\", cause:e });\n"
+		+"			console.log(\"test '\"+testFunction.name+\"' failed\");\n"
+		+"			console.log(e);\n"
+		+"		}\n"
+		+"	};\n\n"
+		+"});\n"
+	);
+
 	window.sessionStorage.setItem("f8ca0f94-8f91-4210-9f57-a33029af532e", JSON.stringify({
 		libraries:[
 			{
 				id:"c4575f18-fc4b-4836-bb6a-0959ae3c17ab",
 				name:"octopus/builtins",
 				url:"https://raw.githubusercontent.com/samuelmercier/octopus-samples/builtins-1.0/builtins/index.html"
+			},
+			{
+				id:"293f21da-70ca-4335-9000-de9c556f4b10",
+				name:"octopus/testing",
+				url:"https://raw.githubusercontent.com/samuelmercier/octopus-samples/testing-1.1/testing/index.html"
 			}
 		],
 		scripts:[
@@ -297,7 +322,7 @@ function newWorkbench(project) {
 		}, 0);
 	}
 
-	function newTextEditor(parentElement, resource, descriptor, positionStart, positionEnd, readonly) {
+	function newTextEditor(parentElement, resource, descriptor, readonly) {
 		const element=System.gui.createElement("textarea", "UITextEditor", { spellcheck:false, readOnly:readonly, value:resource.content() });
 		parentElement.appendChild(element);
 		element.focus();
@@ -317,19 +342,6 @@ function newWorkbench(project) {
 				return false;
 			}
 		};
-		element.selectionStart=descriptor.selectionStart!==undefined ? descriptor.selectionStart : 0;
-		element.selectionEnd=descriptor.selectionEnd!==undefined ? descriptor.selectionEnd : 0;
-		// workaround to make element.scrollLeft/Top effective.
-		setTimeout(function() {
-			if(descriptor.scrollLeft!==undefined)
-				element.scrollLeft=descriptor.scrollLeft;
-			if(descriptor.scrollTop!==undefined)
-				element.scrollTop=descriptor.scrollTop;
-			if(positionStart!==undefined)
-				element.selectionStart=positionStart;
-			if(positionEnd!==undefined)
-				element.selectionEnd=positionEnd;
-		}, 0);
 		return {
 			remove:function() {
 				if(!readonly)
@@ -340,11 +352,24 @@ function newWorkbench(project) {
 				descriptor.selectionStart=element.selectionStart;
 				parentElement.removeChild(element);
 			},
-			setSelection(positionStart, positionEnd) {
-				if(positionStart!==undefined)
+			setSelectionRange(descriptor, positionStart, positionEnd) {
+				if(positionStart!==undefined&&positionEnd!==undefined) {
+					/* explicitly set the selection. workaround for chrome which does not automatically
+					scroll to show the selection. */
+					const value=element.value;
+					element.value=value.substring(0, positionStart);
+					const scrollTop=element.scrollHeight;
+					element.value=value;
 					element.selectionStart=positionStart;
-				if(positionEnd!==undefined)
 					element.selectionEnd=positionEnd;
+					element.scrollTop=scrollTop-element.clientHeight/2;
+				}
+				else {
+					element.selectionStart=descriptor.selectionStart!==undefined ? descriptor.selectionStart : 0;
+					element.selectionEnd=descriptor.selectionEnd!==undefined ? descriptor.selectionEnd : 0;
+					element.scrollLeft=descriptor.scrollLeft!==undefined ? descriptor.scrollLeft : 0;
+					element.scrollTop=descriptor.scrollTop!==undefined ? descriptor.scrollTop : 0;
+				}
 				element.focus();
 			}
 		};
@@ -357,77 +382,116 @@ function newWorkbench(project) {
 	let selectedResource=undefined;
 
 	function testJavascript(tests) {
-		for(const test of tests) {
-			const iframe=document.createElement("iframe");
-			document.body.appendChild(iframe);
-			try {
-				let errors=0;
-				const diagnostics=[];
-				iframe.contentWindow.onerror=function(error) {
-					diagnostics.push({ name:"window.onerror", status:"fail", cause:error });
-					errors+=1;
-				};
-				const scripts=iframe.contentDocument.createElement("script");
-				scripts.setAttribute("type", "text/javascript");
-				scripts.textContent=project.buildScripts();
-				iframe.contentDocument.head.appendChild(scripts);
-				iframe.contentWindow.Tests=function() {
-					return Object.freeze({
-						run:function(testFunction) {
-							const start=performance.now();
-							try {
-								testFunction();
-								diagnostics.push({ name:testFunction.name, duration:performance.now()-start, status:"pass" });
-							} catch(e) {
-								diagnostics.push({ name:testFunction.name, duration:performance.now()-start, status:"fail", cause:e });
-								errors+=1;
-							}
-						}
-					});
-				}();
-				const generator=Compiler.newJavascriptGenerator();
-				test.tree().generate(generator.append("/* *** "+test.name()+" *** */\n\n"));
-				const element=iframe.contentDocument.createElement("script");
-				element.setAttribute("type", "text/javascript");
-				element.textContent=generator.build();
-				iframe.contentDocument.head.appendChild(element);
+		const sources=new Map();
+		const heads=[];
+		for(const library of project.libraries()) {
+			const generator=Compiler.newJavascriptGenerator();
+			library.tree().generate(generator);
+			const libraryUrl=window.URL.createObjectURL(new Blob([ generator.build() ], { type:"text/javascript" }));
+			sources.set(libraryUrl, library);
+			heads.push("<script type=\"text/javascript\" src=\""+libraryUrl+"\"></script>\n");
+		}
+		for(const script of project.scripts()) {
+			const generator=Compiler.newJavascriptGenerator();
+			script.tree().generate(generator);
+			const scriptUrl=window.URL.createObjectURL(new Blob([ generator.build() ], { type:"text/javascript" }));
+			sources.set(scriptUrl, script);
+			heads.push("<script type=\"text/javascript\" src=\""+scriptUrl+"\"></script>\n");
+		}
+		performTest(tests[Symbol.iterator]());
+
+		function performTest(iterator) {
+			const next=iterator.next();
+			if(next.done) {
+				for(const url of sources.keys())
+					window.URL.revokeObjectURL(url);
+				return;
+			}
+			const test=next.value;
+			const generator=Compiler.newJavascriptGenerator();
+			test.tree().generate(generator);
+			const testUrl=window.URL.createObjectURL(new Blob([ generator.build() ], { type:"text/javascript" }));
+			sources.set(testUrl, test);
+			const url=window.URL.createObjectURL(new Blob([
+				"<!DOCTYPE html>\n",
+				"<html>\n",
+				"<head>\n",
+				"<meta charset=\"UTF8\">\n",
+				...heads,
+				"<script type=\"text/javascript\" src=\""+testUrl+"\"></script>\n",
+				"<script type=\"text/javascript\">\n",
+				"window.onload=undefined;\n",
+				"window[\"##oct##terminate\"](octopus.resolve(\"octopus/testing\").diagnostics);\n",
+				"</script>\n",
+				"</head>\n",
+				"</html>"
+			], { type:"text/html" }));
+			const runtime=System.gui.createElement("iframe", undefined, { src:url });
+			document.body.appendChild(runtime);
+			runtime.contentWindow.console=Runtime.newConsole(sources, output.log, selectResource);
+			runtime.contentWindow["##oct##terminate"]=function(diagnostics) {
+				const errors=diagnostics.reduce((errors, diagnostic)=>errors+(diagnostic.status==="fail" ? 1 : 0), 0);
 				items.get(test)
-					.setText(test.name()+": "+(errors===0 ? "pass" : "fail"))
+					.setText(test.name()+": "+(diagnostics.length!==0&&errors===0 ? "pass" : "fail"))
 					.getItems().refresh(diagnostics, function(diagnostic, item) {
 						item.setText(diagnostic.name+": "+(diagnostic.status==="fail" ? diagnostic.cause : "pass"));
-						item.onclick(function(event) {
-							if(diagnostic.cause!==undefined)
-								console.log(diagnostic.cause);
-						});
 					});
-			} finally {
-				document.body.removeChild(iframe);
-			}
+				if(diagnostics.length===0)
+					runtime.contentWindow.console.log(test.name()+": no test. parse error?");
+				else
+					runtime.contentWindow.console.log(test.name()+": executed "+diagnostics.length+" test(s); "+errors+" error(s)");
+			};
+			runtime.onload=function() {
+				if(runtime.contentWindow.location.href===url) {
+					sources.delete(testUrl);
+					window.URL.revokeObjectURL(url);
+					window.URL.revokeObjectURL(testUrl);
+					performTest(iterator);
+				}
+			};
 		}
 	}
 
 	function run() {
+		const sources=new Map();
+		const heads=[];
+		for(const library of project.libraries()) {
+			const generator=Compiler.newJavascriptGenerator();
+			library.tree().generate(generator);
+			const libraryUrl=window.URL.createObjectURL(new Blob([ generator.build() ], { type:"text/javascript" }));
+			sources.set(libraryUrl, library);
+			heads.push("<script type=\"text/javascript\" src=\""+libraryUrl+"\"></script>\n");
+		}
+		for(const script of project.scripts()) {
+			const generator=Compiler.newJavascriptGenerator();
+			script.tree().generate(generator);
+			const scriptUrl=window.URL.createObjectURL(new Blob([ generator.build() ], { type:"text/javascript" }));
+			sources.set(scriptUrl, script);
+			heads.push("<script type=\"text/javascript\" src=\""+scriptUrl+"\"></script>\n");
+		}
+		const url=window.URL.createObjectURL(new Blob([
+			"<!DOCTYPE html>\n",
+			"<html>\n",
+			"<head>\n",
+			"<meta charset=\"UTF8\">\n",
+			"<style type=\"text/css\">"+project.buildStyles()+"</style>\n",
+			...heads,
+			"</head>\n",
+			"</html>"
+		], { type:"text/html" }));
 		if(runtime!==undefined)
 			runtime.close();
-		runtime=window.open("about:blank", "window", "menubar=0,toolbar=0,location=0,titlebar=0");
-		setTimeout(function() {
-			runtime.window.onload=undefined;
-			const scripts=runtime.document.createElement("script");
-			scripts.setAttribute("type", "text/javascript");
-			scripts.textContent=project.buildScripts();
-			runtime.document.head.appendChild(scripts);
-			const styles=runtime.document.createElement("style");
-			styles.setAttribute("type", "text/css");
-			styles.textContent=project.buildStyles();
-			runtime.document.head.appendChild(styles);
-			runtime.focus();
-			const onload=runtime.window.onload;
-			if(onload) {
-				runtime.window.onload=undefined;
-				onload();
+		runtime=window.open(url, "window", "menubar=0,toolbar=0,location=0,titlebar=0");
+		runtime.window.console=Runtime.newConsole(sources, output.log, selectResource);
+		runtime.onunload=function() {
+			if(runtime.window.location.href===url) {
+				window.URL.revokeObjectURL(url);
+				for(const url of sources.keys())
+					window.URL.revokeObjectURL(url);
 			}
-		}, 0);
-	}
+		};
+		runtime.focus();
+	};
 
 	function selectDiagnostic(diagnostic) {
 		diagnostics.setSelectedIndex(project.diagnostics().indexOf(diagnostic));
@@ -444,6 +508,32 @@ function newWorkbench(project) {
 		selectEditor(resource, positionStart, positionEnd);
 		selectedResource=resource;
 	}
+
+	const output=function() {
+		const elements={};
+		elements.element=System.gui.createElement("div", "UIConsole", {
+			oncontextmenu:function(event) {
+				const popup=System.gui.openContextMenu({
+					items:[ { text:"Clear", onclick:function() { popup.close(), output.clear(); } } ]
+				}).setPosition(event.pageX+"px", event.pageY+"px");
+				return false;
+			}
+		});
+		const output={
+			clear:function() {
+				while(elements.element.lastChild!==null)
+					elements.element.removeChild(elements.element.lastChild);
+			},
+			log:function(element) { elements.element.appendChild(element); },
+			setParentElement:function(parentElement) {
+				if(parentElement!==null)
+					parentElement.appendChild(elements.element);
+				else
+					elements.element.parentElement.removeChild(elements.element);
+			}
+		};
+		return output;
+	}();
 
 	const diagnostics=System.gui.components.newTable({
 		onselect:function(diagnostic) { selectDiagnostic(diagnostic); },
@@ -470,27 +560,29 @@ function newWorkbench(project) {
 	const descriptors=new Map();
 	let editor;
 	function selectEditor(resource, positionStart, positionEnd) {
-		if(editor!==undefined&&selectedResource===resource)
-			return void editor.setSelection(positionStart, positionEnd);
-		if(editor!==undefined) {
-			editor.remove();
-			editor=undefined;
-		}
 		let descriptor=descriptors.get(resource);
 		if(descriptor===undefined)
 			descriptors.set(resource, descriptor={});
-		for(const library of project.libraries())
-			if(library===resource)
-				editor=newTextEditor(elements.top, resource, descriptor, positionStart, positionEnd, true);
-		for(const script of project.scripts())
-			if(script===resource)
-				editor=newTextEditor(elements.top, resource, descriptor, positionStart, positionEnd, false);
-		for(const style of project.styles())
-			if(style===resource)
-				editor=newTextEditor(elements.top, resource, descriptor, positionStart, positionEnd, false);
-		for(const test of project.tests())
-			if(test===resource)
-				editor=newTextEditor(elements.top, resource, descriptor, positionStart, positionEnd, false);
+		if(editor===undefined||selectedResource!==resource) {
+			if(editor!==undefined) {
+				editor.remove();
+				editor=undefined;
+			}
+			for(const library of project.libraries())
+				if(library===resource)
+					editor=newTextEditor(elements.top, resource, descriptor, true);
+			for(const script of project.scripts())
+				if(script===resource)
+					editor=newTextEditor(elements.top, resource, descriptor, false);
+			for(const style of project.styles())
+				if(style===resource)
+					editor=newTextEditor(elements.top, resource, descriptor, false);
+			for(const test of project.tests())
+				if(test===resource)
+					editor=newTextEditor(elements.top, resource, descriptor, false);
+		}
+		if(editor!==undefined)
+			editor.setSelectionRange(descriptor, positionStart, positionEnd);
 	}
 
 	function selectTreeItem(resource) {
@@ -633,5 +725,9 @@ function newWorkbench(project) {
 	);
 	document.body.appendChild(elements.element);
 	tree.setParentElement(elements.left);
-	diagnostics.setParentElement(elements.bottom);
+	System.gui.components.newTabbedPanel()
+		.addTab("Diagnostics", diagnostics)
+		.addTab("Console", output)
+		.setTabIndex(0)
+		.setParentElement(elements.bottom);
 }

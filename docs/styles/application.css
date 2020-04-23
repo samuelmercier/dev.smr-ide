@@ -14,6 +14,18 @@ body {
 	position: relative;
 }
 
+.UIConsole {
+	height: 100%;
+	overflow: auto;
+	width: 100%;
+}
+.UIConsole > .entry {
+	white-space: pre;
+	border-bottom: solid 0.2em #404040;
+}
+.UIConsole > .entry > .stack {}
+.UIConsole > .entry > .stack-link { text-decoration: underline; }
+
 .UIWorkbench {
 	box-sizing: border-box;
 	height: 100%;
@@ -169,6 +181,34 @@ body {
 
 
 
+.UITabbedPanel {
+	box-sizing: border-box;
+	height: 100%;
+	width: 100%;
+}
+.UITabbedPanel > .header {
+	background: #404040;
+	overflow: hidden;
+	position: absolute;
+	top: 0;
+	user-select: none;
+	white-space: pre;
+	width: 100%;
+}
+.UITabbedPanel > .header > .tab {
+	color: gray;
+	display: inline-block;
+	padding: 0 0.4em 0 0.4em;
+}
+.UITabbedPanel > .header > .tab[selected="selected"] {
+	background: #202020;
+	color: gray;
+}
+.UITabbedPanel > .container {
+	height: 100%;
+	position: relative;
+	width: 100%;
+}
 .UITable {
 	box-sizing: border-box;
 	height: 100%;

@@ -37,8 +37,16 @@ const Compiler=function() {
 		return Object.freeze({
 			append:function(text) { return result.push(text), this; },
 			build:function() { return result.join(""); },
-			commentIn:function() { return commentLevel+=1, this; },
-			commentOut:function() { return commentLevel-=1, this; },
+			commentIn:function() {
+				if(commentLevel===0)
+					this.append("/* ");
+				return commentLevel+=1, this;
+			},
+			commentOut:function() {
+				if(commentLevel===1)
+					this.append(" */");
+				return commentLevel-=1, this;
+			},
 			generate:function(token) {
 				if(commentLevel===0)
 					for(const trivia of token.trivias)

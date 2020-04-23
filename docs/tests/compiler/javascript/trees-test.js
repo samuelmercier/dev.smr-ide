@@ -116,7 +116,7 @@
 
 	Tests.run(function testGenerateStatementClass() {
 		assertGenerateSingleStatement(" class Class { }");
-		assertGenerateSingleStatement(" @native class Class { }", "");
+		assertGenerateSingleStatement(" @native class Class { }", "/*  @native class Class { } */");
 
 		assertGenerateSingleStatement(
 			" @annotation class Class extends Base { }",
@@ -155,7 +155,7 @@
 
 	Tests.run(function testGenerateStatementFunction() {
 		assertGenerateSingleStatement(" function f ( ) { }");
-		assertGenerateSingleStatement(" @native function f ( ) { }", "");
+		assertGenerateSingleStatement(" @native function f ( ) { }", "/*  @native function f ( ) { } */");
 	});
 
 	Tests.run(function testGenerateStatementIf() {
@@ -189,7 +189,7 @@
 
 	Tests.run(function testGenerateStatementVar() {
 		assertGenerateSingleStatement(" var a , b = 1 ;");
-		assertGenerateSingleStatement(" @native var a , b = 1 ;", "");
+		assertGenerateSingleStatement(" @native var a , b = 1 ;", "/*  @native var a , b = 1 ; */");
 	});
 
 })();

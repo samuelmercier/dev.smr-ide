@@ -24,12 +24,12 @@ function defineJavascriptTrees(Compiler) {
 		}
 
 		generate(generator) {
-			generator.commentIn().append("/* ");
+			generator.commentIn();
 			for(const annotationTree of this.annotationTrees) {
 				annotationTree.atToken.generate(generator);
 				annotationTree.nameToken.generate(generator);
 			}
-			generator.commentOut().append(" */");
+			generator.commentOut();
 		}
 
 	});
@@ -1291,8 +1291,13 @@ function defineJavascriptTrees(Compiler) {
 		generate(generator) {
 			if(this.annotationsTree!==undefined) {
 				for(const annotationTree of this.annotationsTree.annotationTrees)
-					if(annotationTree.nameToken.text==="native")
+					if(annotationTree.nameToken.text==="native") {
+						generator.commentIn();
+						this.annotationsTree.generate(generator);
+						this.classTree.generate(generator);
+						generator.commentOut();
 						return;
+					}
 				this.annotationsTree.generate(generator);
 			}
 			this.classTree.generate(generator);
@@ -1624,10 +1629,14 @@ function defineJavascriptTrees(Compiler) {
 		generate(generator) {
 			if(this.annotationsTree!==undefined) {
 				for(const annotationTree of this.annotationsTree.annotationTrees)
-					if(annotationTree.nameToken.text==="native")
+					if(annotationTree.nameToken.text==="native") {
+						generator.commentIn();
+						this.annotationsTree.generate(generator);
+						this.functionTree.generate(generator);
+						generator.commentOut();
 						return;
-				for(const annotationTree of this.annotationsTree.annotationTrees)
-					annotationTree.generate(generator);
+					}
+				this.annotationsTree.generate(generator);
 			}
 			this.functionTree.generate(generator);
 		}
@@ -2023,12 +2032,14 @@ function defineJavascriptTrees(Compiler) {
 		}
 
 		generate(generator) {
+			let comment=false;
 			if(this.annotationsTree!==undefined) {
 				for(const annotationTree of this.annotationsTree.annotationTrees)
 					if(annotationTree.nameToken.text==="native")
-						return;
-				for(const annotationTree of this.annotationsTree.annotationTrees)
-					annotationTree.generate(generator);
+						comment=true;
+				if(comment)
+					generator.commentIn();
+				this.annotationsTree.generate(generator);
 			}
 			this.keywordToken.generate(generator);
 			for(const declaratorTree of this.declaratorTrees) {
@@ -2039,6 +2050,8 @@ function defineJavascriptTrees(Compiler) {
 					declaratorTree.initializerTree.generate(generator);
 			}
 			this.semicolonToken.generate(generator);
+			if(comment)
+				generator.commentOut();
 		}
 
 	});

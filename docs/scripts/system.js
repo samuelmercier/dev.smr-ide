@@ -22,6 +22,59 @@ function defineSystem(entrypoint) {
 	const System={
 		gui:{
 			components:{
+				newTabbedPanel:function() {
+					const controls=[];
+					const elements={};
+					elements.element=System.gui.createElement("div", "UITabbedPanel", undefined,
+						elements.header=System.gui.createElement("div", "header"),
+						elements.container=System.gui.createElement("div", "container")
+					);
+					let selectedTabIndex=undefined;
+					return {
+						setParentElement:function(parentElement) {
+							if(parentElement!==null) {
+								parentElement.appendChild(elements.element);
+								elements.element.style.paddingTop=elements.header.offsetHeight+"px";
+								if(selectedTabIndex!==undefined)
+									controls[selectedTabIndex].setParentElement(elements.container);
+							}
+							else {
+								if(selectedTabIndex!==undefined)
+									controls[selectedTabIndex].setParentElement(null);
+								elements.element.parentElement.removeChild(elements.element);
+							}
+						},
+						addTab:function(text, control) {
+							const tabIndex=controls.length;
+							elements.header.appendChild(System.gui.createElement("div", "tab", {
+								onclick:event=>this.setTabIndex(tabIndex)&&false
+							},
+								document.createTextNode(text)
+							));
+							if(elements.element.parentElement!==null)
+								elements.element.style.paddingTop=elements.header.offsetHeight+"px";
+							controls.push(control);
+							return this;
+						},
+						setTabIndex:function(tabIndex) {
+							if(selectedTabIndex!==tabIndex) {
+								if(selectedTabIndex!==undefined) {
+									elements.header.childNodes[selectedTabIndex].removeAttribute("selected");
+									if(elements.element.parentElement!==null)
+										controls[selectedTabIndex].setParentElement(null);
+								}
+								selectedTabIndex=tabIndex;
+								if(selectedTabIndex!==undefined) {
+									elements.header.childNodes[selectedTabIndex].setAttribute("selected", "selected");
+									if(elements.element.parentElement!==null)
+										controls[selectedTabIndex].setParentElement(elements.container);
+								}
+							}
+							return this;
+						}
+					};
+				},
+
 				newTable:function(descriptor) {
 
 					function refresh() {
