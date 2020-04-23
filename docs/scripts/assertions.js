@@ -58,6 +58,7 @@ function assertDiagnostics(result) {
 		assertDiagnostic:function(offsetStart, offsetEnd, message) {
 			if(index>=diagnostics.length)
 				throw new Error("diagnostic was not reported");
+			Assertions.assertEqual(diagnostics[index].sourceId, "sourceId");
 			if(offsetStart!==undefined)
 				Assertions.assertEqual(diagnostics[index].positionStart, offsetStart);
 			if(offsetEnd!==undefined)

@@ -1220,7 +1220,7 @@ function defineJavascriptTrees(Compiler) {
 		resolveDeclaration(name) { return this.declarations.get(name); }
 
 		newDiagnostic(token, message) {
-			this.diagnostics.push(Compiler.newDiagnostic(token.source, token.line, token.offset, token.offset+token.text.length, message));
+			this.diagnostics.push(Compiler.newDiagnostic(token.source.id, token.line, token.offset, token.offset+token.text.length, message));
 		}
 
 		containsLabel(name) { return false; }

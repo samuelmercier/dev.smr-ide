@@ -872,7 +872,7 @@ function defineJavascriptParser(Compiler) {
 					continue;
 				}
 				throw new JavascriptParser.SyntaxError(Compiler.newDiagnostic(
-					source, lines.length, colonToken.offset, colonToken.offset+1, "syntax error: expected ';'"
+					sourceId, lines.length, colonToken.offset, colonToken.offset+1, "syntax error: expected ';'"
 				));
 			}
 		}
