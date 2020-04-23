@@ -1,11 +1,58 @@
 "use strict";
 
 const System=defineSystem(function () {
-	window.sessionStorage.setItem("d6fc5816-b0b0-4c6b-99ca-f4aa82b78223", "@native var alert;\n@native var window;\n@native var Error;\n@native var Tests;");
 	window.sessionStorage.setItem("3e965e61-0f1e-4e4d-bd07-9053d011bfb1", "window.onload=function() { alert(\"Hello World!\"); };");
+	window.sessionStorage.setItem("c4575f18-fc4b-4836-bb6a-0959ae3c17ab",
+		"/* *** library https://raw.githubusercontent.com/samuelmercier/octopus-samples/master/builtins/index.html *** */\n\n"
+		+"/* *** https://raw.githubusercontent.com/samuelmercier/octopus-samples/master/builtins/scripts/builtins.js *** */\n\n"
+		+"\"use strict\";\n\n"
+		+"@native function Error() {}\n"
+		+"@native function Object() {}\n"
+		+"@native function Map() {}\n\n"
+		+"@native function alert() {}\n"
+		+"@native var console;\n"
+		+"@native var performance;\n"
+		+"@native var undefined;\n"
+		+"@native var window;\n\n"
+		+"const octopus=function() {\n\n"
+		+"	const initializers=new Map();\n"
+		+"	const libraries=new Map();\n"
+		+"	const octopus={};\n\n"
+		+"	octopus.define=Object.freeze(function(libraryName, initializer) {\n"
+		+"		if(typeof initializer!==\"function\")\n"
+		+"			throw new Error(\"initializer is not a function\");\n"
+		+"		if(initializers.has(libraryName))\n"
+		+"			throw new Error(\"redefinition of library '\"+libraryName+\"'\");\n"
+		+"		initializers.set(libraryName, initializer);\n"
+		+"	});\n\n"
+		+"	octopus.resolve=Object.freeze(function(libraryName) {\n"
+		+"		const library=libraries.get(libraryName);\n"
+		+"		if(library!==undefined)\n"
+		+"			return library;\n"
+		+"		const initializer=initializers.get(libraryName);\n"
+		+"		if(initializer===undefined)\n"
+		+"			throw new Error(\"cannot resolve library '\"+libraryName+\"'\");\n"
+		+"		const result={};\n"
+		+"		libraries.set(libraryName, result);\n"
+		+"		initializer(result);\n"
+		+"		return Object.freeze(result);\n"
+		+"	});\n\n"
+		+"	octopus.initialize=function() {\n"
+		+"		for(const libraryName of initializers.keys())\n"
+		+"			octopus.resolve(libraryName);\n"
+		+"	};\n\n"
+		+"	return Object.freeze(octopus);\n\n"
+		+"}();\n"
+	);
 	window.sessionStorage.setItem("f8ca0f94-8f91-4210-9f57-a33029af532e", JSON.stringify({
+		libraries:[
+			{
+				id:"c4575f18-fc4b-4836-bb6a-0959ae3c17ab",
+				name:"octopus/builtins",
+				url:"https://raw.githubusercontent.com/samuelmercier/octopus-samples/builtins-1.0/builtins/index.html"
+			}
+		],
 		scripts:[
-			{ id:"d6fc5816-b0b0-4c6b-99ca-f4aa82b78223", name:"builtins.js" },
 			{ id:"3e965e61-0f1e-4e4d-bd07-9053d011bfb1", name:"hello-world.js" }
 		],
 		styles:[],
@@ -104,6 +151,59 @@ function newWorkbench(project) {
 		return false;
 	}
 
+	function openImportLibraryDialog() {
+		let cancel, commit, input, dialog=System.gui.openPopupDialog({
+			left:"2em",
+			top:"2em",
+			width:"40em",
+			title:"Import a library",
+			content:System.gui.createElement("div", "UIContainer", undefined,
+				System.gui.createElement("div", "UILabel", undefined, document.createTextNode("Url")),
+				input=System.gui.createElement("input", "UIInput")
+			),
+			buttons:[
+				cancel=System.gui.createElement("button", undefined, {
+					onclick:function() { dialog.close(); }
+				}, document.createTextNode("Cancel")),
+				commit=System.gui.createElement("button", undefined, {
+					onclick:function() {
+						const url=input.value;
+						project.importLibrary(url, function onsuccess(library) {
+							selectResource(library);
+							dialog.close();
+						}, function onerror(error) {
+							alert(error.message);
+						});
+					}
+				}, document.createTextNode("Import"))
+			],
+			controls:[ input, commit, cancel ]
+		});
+	}
+
+	function openLibraryContextMenu(event, library) {
+		selectResource(library);
+		const popup=System.gui.openContextMenu({
+			items:[
+				{ text:"Delete", onclick:function() { popup.close(), openDeleteDialog("Delete library '"+library.name()+"' ?", library); } }
+			]
+		}).setPosition(event.pageX+"px", event.pageY+"px");
+		return false;
+	}
+
+	function openLibrariesContextMenu(event) {
+		selectResource(project.libraries());
+		const popup=System.gui.openContextMenu({
+			items:[
+				{
+					text:"Import a library",
+					onclick:function() { openImportLibraryDialog(), popup.close(); }
+				}
+			]
+		}).setPosition(event.pageX+"px", event.pageY+"px");
+		return false;
+	}
+
 	function openScriptContextMenu(event, script) {
 		selectResource(script);
 		const popup=System.gui.openContextMenu({
@@ -197,8 +297,8 @@ function newWorkbench(project) {
 		}, 0);
 	}
 
-	function newTextEditor(parentElement, resource, descriptor, positionStart, positionEnd) {
-		const element=System.gui.createElement("textarea", "UITextEditor", { spellcheck:false, value:resource.content() });
+	function newTextEditor(parentElement, resource, descriptor, positionStart, positionEnd, readonly) {
+		const element=System.gui.createElement("textarea", "UITextEditor", { spellcheck:false, readOnly:readonly, value:resource.content() });
 		parentElement.appendChild(element);
 		element.focus();
 		element.onkeydown=function(event) {
@@ -212,7 +312,8 @@ function newWorkbench(project) {
 				return false;
 			}
 			if(event.ctrlKey&&(event.which===83||event.which===115)) {
-				resource.save(element.value);
+				if(!readonly)
+					resource.save(element.value);
 				return false;
 			}
 		};
@@ -231,7 +332,8 @@ function newWorkbench(project) {
 		}, 0);
 		return {
 			remove:function() {
-				resource.save(element.value);
+				if(!readonly)
+					resource.save(element.value);
 				descriptor.scrollLeft=element.scrollLeft;
 				descriptor.scrollTop=element.scrollTop;
 				descriptor.selectionEnd=element.selectionEnd;
@@ -377,15 +479,18 @@ function newWorkbench(project) {
 		let descriptor=descriptors.get(resource);
 		if(descriptor===undefined)
 			descriptors.set(resource, descriptor={});
+		for(const library of project.libraries())
+			if(library===resource)
+				editor=newTextEditor(elements.top, resource, descriptor, positionStart, positionEnd, true);
 		for(const script of project.scripts())
 			if(script===resource)
-				editor=newTextEditor(elements.top, resource, descriptor, positionStart, positionEnd);
+				editor=newTextEditor(elements.top, resource, descriptor, positionStart, positionEnd, false);
 		for(const style of project.styles())
 			if(style===resource)
-				editor=newTextEditor(elements.top, resource, descriptor, positionStart, positionEnd);
+				editor=newTextEditor(elements.top, resource, descriptor, positionStart, positionEnd, false);
 		for(const test of project.tests())
 			if(test===resource)
-				editor=newTextEditor(elements.top, resource, descriptor, positionStart, positionEnd);
+				editor=newTextEditor(elements.top, resource, descriptor, positionStart, positionEnd, false);
 	}
 
 	function selectTreeItem(resource) {
@@ -402,6 +507,23 @@ function newWorkbench(project) {
 		.onclick(function(event) { selectResource(project); })
 		.oncontextmenu(function(event) { openProjectContextMenu(event); });
 	items.set(project, projectItem);
+	const librariesItem=projectItem.getItems().add()
+		.setText("libraries")
+			.onclick(function(event) { selectResource(project.libraries()); })
+			.oncontextmenu(function(event) { openLibrariesContextMenu(event); });
+	project.libraries().registerListener(function(added, removed) {
+		const libraries=Array.from(project.libraries())
+			.sort(function(a, b) { return a.name().localeCompare(b.name()); });
+		librariesItem.getItems().refresh(libraries, function(library, item) {
+			items.set(library, item);
+			item
+				.setText(library.name()+" ("+library.url()+")")
+				.onclick(function(event) { selectResource(library); })
+				.oncontextmenu(function(event) { openLibraryContextMenu(event, library); })
+				.setSelected(library===selectedResource);
+		});
+	});
+	items.set(project.libraries(), librariesItem);
 	const scriptsItem=projectItem.getItems().add()
 		.setText("scripts")
 		.onclick(function(event) { selectResource(project.scripts()); })

@@ -90,13 +90,19 @@ const Compiler=function() {
 			for(const reference of sourceTree.references) {
 				const tree=reference.tree;
 				const nameToken=tree.nameToken;
-				if(declarations.get(nameToken.text)===undefined&&(scope===undefined||scope.declarations.get(nameToken.text)===undefined))
+				if(declarations.get(nameToken.text)===undefined&&(scope===undefined||scope.resolve(nameToken.text)===undefined))
 					newDiagnostic(nameToken, "cannot resolve '"+nameToken.text+"'");
 			}
 		return Object.freeze({
 			declarations:declarations,
 			diagnostics:diagnostics,
-			sourceTrees:sourceTrees
+			sourceTrees:sourceTrees,
+			resolve:function(name) {
+				const result=this.declarations.get(name);
+				if(result!==undefined)
+					return result;
+				return scope!==undefined ? scope.resolve(name) : undefined;
+			}
 		});
 	});
 

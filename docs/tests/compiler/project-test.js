@@ -27,9 +27,97 @@
 		Assertions.assertEqual(storage.items.get("b1295ad4-1e00-4f77-8e40-f24875ec4557"), JSON.stringify({scripts:[],styles:[]}));
 	});
 
+	Tests.run(function testFetchLibrary() {
+
+		function asyncRequest(method, url, payload, onsuccess, onerror) {
+			switch(url) {
+			case "base/project":
+				return void onsuccess({responseText:["<!DOCTYPE html>",
+					"<html>",
+					"	<head>",
+					"		<meta charset=\"utf-8\">",
+					"		<meta name=\"application-name\" content=\"octopus/library\">",
+					"		<script type=\"text/javascript\" src=\"scripts/script1.js\"></script>",
+					"		<script type=\"text/javascript\" src=\"scripts/script2.js\"></script>",
+					"	</head>",
+					"</html>"
+				].join("")});
+			case "base/scripts/script1.js":
+				return void onsuccess({ responseText:"// content1" });
+			case "base/scripts/script2.js":
+				return void onsuccess({ responseText:"// content2" });
+			default:
+				return void onerror({ status:500 });
+			}
+		}
+
+		let library=undefined;
+		Project.fetchLibrary(asyncRequest, "base/project", function(result) {
+			library=result;
+		}, function(error) {
+			throw error;
+		});
+
+		Assertions.assertEqual(library.applicationName, "octopus/library");
+		Assertions.assertEqual(library.content, [
+			"/* *** library base/project *** */\n\n",
+			"/* *** base/scripts/script1.js *** */\n\n",
+			"// content1\n",
+			"/* *** base/scripts/script2.js *** */\n\n",
+			"// content2\n"
+		].join(""));
+		Assertions.assertEqual(library.url, "base/project");
+	});
+
+	Tests.run(function testFetchLibraryFetchFail() {
+
+		function asyncRequest(method, url, payload, onsuccess, onerror) { return void onerror({ status:500 }); }
+
+		let error=undefined;
+		Project.fetchLibrary(asyncRequest, "base/project", function(result) {
+			throw new Error("should not be reached");
+		}, function(value) {
+			error=value;
+		});
+
+		Assertions.assertEqual(error.message, "failed to load project 'base/project': 500");
+	});
+
+	Tests.run(function testFetchLibraryFetchScriptFail() {
+
+		function asyncRequest(method, url, payload, onsuccess, onerror) {
+			switch(url) {
+			case "base/project":
+				return void onsuccess({responseText:["<!DOCTYPE html>",
+					"<html>",
+					"	<head>",
+					"		<meta charset=\"utf-8\">",
+					"		<meta name=\"application-name\" content=\"octopus/library\">",
+					"		<script type=\"text/javascript\" src=\"scripts/script.js\"></script>",
+					"	</head>",
+					"</html>"
+				].join("")});
+			default:
+				return void onerror({ status:500 });
+			}
+		}
+
+		let error=undefined;
+		Project.fetchLibrary(asyncRequest, "base/project", function(result) {
+			throw new Error("should not be reached");
+		}, function(value) {
+			error=value;
+		});
+
+		Assertions.assertEqual(error.message, "failed to fetch script 'base/scripts/script.js: 500");
+	});
+
 	Tests.run(function testLoadProject() {
 		const storage=newLocalStorage();
 		storage.items.set("b1295ad4-1e00-4f77-8e40-f24875ec4557", JSON.stringify({
+			libraries:[
+				{ id:"0aee62c0-efdd-44c1-89fe-c2eb6bf66308", name:"library1", url:"url1" }
+			],
 			scripts:[
 				{ id:"6c8faf8d-ee4d-4928-b2d1-02ed87f59377", name:"script1" },
 				{ id:"7bb35b40-5308-4e79-9fd5-44f945c24bfa", name:"script2" }
@@ -37,6 +125,7 @@
 			styles:[ { id:"968f03af-234b-4e0b-bf37-a5ac13b4ec8e", name:"style1" } ],
 			tests:[ { id:"58eadfdf-ca6a-4e72-a903-a9fd9b7a3767", name:"test1" } ]
 		}));
+		storage.items.set("0aee62c0-efdd-44c1-89fe-c2eb6bf66308", "// library1");
 		storage.items.set("6c8faf8d-ee4d-4928-b2d1-02ed87f59377", "content1");
 		storage.items.set("7bb35b40-5308-4e79-9fd5-44f945c24bfa", "content2");
 		storage.items.set("58eadfdf-ca6a-4e72-a903-a9fd9b7a3767", "content3");
@@ -49,6 +138,12 @@
 		Assertions.assertEqual(project.diagnostics().at(0).message, "syntax error: expected ';'");
 		Assertions.assertEqual(project.diagnostics().at(1).message, "syntax error: expected ';'");
 		Assertions.assertEqual(project.diagnostics().at(2).message, "syntax error: expected ';'");
+
+		Assertions.assertEqual(project.libraries().size(), 1);
+		Assertions.assertEqual(project.libraries().get("0aee62c0-efdd-44c1-89fe-c2eb6bf66308").id(), "0aee62c0-efdd-44c1-89fe-c2eb6bf66308");
+		Assertions.assertEqual(project.libraries().get("0aee62c0-efdd-44c1-89fe-c2eb6bf66308").name(), "library1");
+		Assertions.assertEqual(project.libraries().get("0aee62c0-efdd-44c1-89fe-c2eb6bf66308").content(), "// library1");
+		Assertions.assertEqual(project.libraries().get("0aee62c0-efdd-44c1-89fe-c2eb6bf66308").tree().diagnostics.length, 0);
 
 		Assertions.assertEqual(project.scripts().size(), 2);
 		Assertions.assertEqual(project.scripts().get("6c8faf8d-ee4d-4928-b2d1-02ed87f59377").id(), "6c8faf8d-ee4d-4928-b2d1-02ed87f59377");
