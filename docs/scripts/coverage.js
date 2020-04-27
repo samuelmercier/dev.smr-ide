@@ -10,11 +10,11 @@ const Coverage=function() {
 		if(runtime!==undefined)
 			runtime.close();
 		runtime=window.open("about:blank", "_blank", "menubar=0,toolbar=0,location=0,titlebar=0");
-		runtime.onload=function() {
+		setTimeout(function() {
 			runtime.window.document.head.appendChild(System.gui.createElement("link", undefined, {
 				rel:"stylesheet",
 				type:"text/css",
-				href:"styles/application.css"
+				href:window.location.origin+"/styles/application.css"
 			}));
 
 			const coverages=new Map();
@@ -322,7 +322,7 @@ const Coverage=function() {
 					runtime.window.document.addEventListener("mousemove", onmousemove);
 				}
 			}
-		};
+		}, 1);
 	});
 
 	return Object.freeze(definition);
