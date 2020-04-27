@@ -16,8 +16,8 @@
 	});
 
 	Tests.run(function testGenerateEmpty() {
-		assertGenerateSingleStatement(" { }");
-		assertGenerateSingleStatement("label1: label2: { }");
+		assertGenerateSingleStatement(" ;");
+		assertGenerateSingleStatement("label1: label2: ;");
 	});
 
 	Tests.run(function testGenerateExpressionArrayAccess() {
@@ -60,6 +60,9 @@
 
 	Tests.run(function testGenerateExpressionLiteral() {
 		assertGenerateSingleStatement(" 0 ;");
+		assertGenerateSingleStatement(" 'character' ;");
+		assertGenerateSingleStatement(" \"string\" ;");
+		assertGenerateSingleStatement(" /regex/ ;");
 	});
 
 	Tests.run(function testGenerateExpressionMemberAccess() {
@@ -109,7 +112,7 @@
 		Assertions.assertEqual(generator.build(), " ");
 	});
 
-	Tests.run(function testGenerateBreak() {
+	Tests.run(function testGenerateStatementBreak() {
 		assertGenerateSingleStatement(" break ;");
 		assertGenerateSingleStatement(" label1 : label2 : break label ;");
 	});
@@ -131,6 +134,7 @@
 
 	Tests.run(function testGenerateStatementDo() {
 		assertGenerateSingleStatement(" do a ; while ( condition ) ;");
+		assertGenerateSingleStatement(" label1 : label2 : do a ; while ( condition ) ;");
 	});
 
 	Tests.run(function testGenerateStatementExpression() {
@@ -160,7 +164,7 @@
 
 	Tests.run(function testGenerateStatementIf() {
 		assertGenerateSingleStatement(" if ( condition ) a ;");
-		assertGenerateSingleStatement(" if ( condition ) a ; else b ;");
+		assertGenerateSingleStatement(" label1 : label2 : if ( condition ) a ; else b ;");
 	});
 
 	Tests.run(function testGenerateStatementReturn() {
@@ -169,7 +173,7 @@
 	});
 
 	Tests.run(function testGenerateStatementSwitch() {
-		assertGenerateSingleStatement(" switch ( condition ) { case a : expression1; default : expression2; }");
+		assertGenerateSingleStatement(" label1 : label2 : switch ( condition ) { case a : expression1; default : expression2; }");
 	});
 
 	Tests.run(function testGenerateStatementThrow() {
@@ -190,6 +194,1061 @@
 	Tests.run(function testGenerateStatementVar() {
 		assertGenerateSingleStatement(" var a , b = 1 ;");
 		assertGenerateSingleStatement(" @native var a , b = 1 ;", "/*  @native var a , b = 1 ; */");
+	});
+
+	function assertGenerateHtmlStatement(input, expected) {
+		const result=Compiler.parseJavascript("sourceId", input);
+		Assertions.assertEqual(result.statementTrees.length, 1);
+		const generator=Compiler.newHtmlGenerator({ getCoverageFor:function(line) { return undefined; } });
+		result.statementTrees[0].generate(generator);
+		Assertions.assertEqual(generator.build().innerHTML, expected!==undefined ? expected : input);
+	}
+
+	Tests.run(function testGenerateHtmlCoverage() {
+		const result=Compiler.parseJavascript("sourceId", "1;");
+		Assertions.assertEqual(result.statementTrees.length, 1);
+		const generator=Compiler.newHtmlGenerator({ getCoverageFor:function(line) { return "coverage"; } });
+		result.statementTrees[0].generate(generator);
+		Assertions.assertEqual(
+			generator.build().innerHTML,
+			"<span class=\"number\" coverage=\"coverage\">1</span><span class=\"punctuator\" coverage=\"coverage\">;</span>"
+		);
+	});
+
+	Tests.run(function testGenerateHtmlBlock() {
+		assertGenerateHtmlStatement(
+			" { }",
+			" <span class=\"punctuator\">{</span> <span class=\"punctuator\">}</span>"
+		);
+		assertGenerateHtmlStatement(
+			" label1: label2: { }",
+			" <span class=\"identifier\">label1</span><span class=\"punctuator\">:</span>"
+			+" <span class=\"identifier\">label2</span><span class=\"punctuator\">:</span>"
+			+" <span class=\"punctuator\">{</span> <span class=\"punctuator\">}</span>"
+		);
+	});
+
+	Tests.run(function testGenerateHtmlEmpty() {
+		assertGenerateHtmlStatement(" ;", " <span class=\"punctuator\">;</span>");
+		assertGenerateHtmlStatement(
+			" label1: label2: ;",
+			" <span class=\"identifier\">label1</span><span class=\"punctuator\">:</span>"
+			+" <span class=\"identifier\">label2</span><span class=\"punctuator\">:</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+	});
+
+	Tests.run(function testGenerateHtmlExpressionArrayAccess() {
+		assertGenerateHtmlStatement(
+			" a [ b ] ;",
+			" <span class=\"identifier\">a</span>"
+			+" <span class=\"punctuator\">[</span>"
+			+" <span class=\"identifier\">b</span>"
+			+" <span class=\"punctuator\">]</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+	});
+
+	Tests.run(function testGenerateHtmlExpressionArrayLiteral() {
+		assertGenerateHtmlStatement(
+			" [ ] ;",
+			" <span class=\"punctuator\">[</span>"
+			+" <span class=\"punctuator\">]</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+		assertGenerateHtmlStatement(
+			" [ a , b ] ;",
+			" <span class=\"punctuator\">[</span>"
+			+" <span class=\"identifier\">a</span>"
+			+" <span class=\"punctuator\">,</span>"
+			+" <span class=\"identifier\">b</span>"
+			+" <span class=\"punctuator\">]</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+	});
+
+	Tests.run(function testGenerateHtmlExpressionAssign() {
+		assertGenerateHtmlStatement(
+			" a = b ;",
+			" <span class=\"identifier\">a</span>"
+			+" <span class=\"punctuator\">=</span>"
+			+" <span class=\"identifier\">b</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+	});
+
+	Tests.run(function testGenerateHtmlExpressionClass() {
+		assertGenerateHtmlStatement(
+			" ( class { } ) ;",
+			" <span class=\"punctuator\">(</span>"
+			+" <span class=\"keyword\">class</span>"
+			+" <span class=\"punctuator\">{</span>"
+			+" <span class=\"punctuator\">}</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+		assertGenerateHtmlStatement(
+			" ( class Class extends Base { } ) ;",
+			" <span class=\"punctuator\">(</span>"
+			+" <span class=\"keyword\">class</span>"
+			+" <span class=\"identifier\">Class</span>"
+			+" <span class=\"keyword\">extends</span>"
+			+" <span class=\"identifier\">Base</span>"
+			+" <span class=\"punctuator\">{</span>"
+			+" <span class=\"punctuator\">}</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+	});
+
+	Tests.run(function testGenerateHtmlExpressionFunction() {
+		assertGenerateHtmlStatement(
+			" ( function ( ) { } ) ;",
+			" <span class=\"punctuator\">(</span>"
+			+" <span class=\"keyword\">function</span>"
+			+" <span class=\"punctuator\">(</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"punctuator\">{</span>"
+			+" <span class=\"punctuator\">}</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+		assertGenerateHtmlStatement(
+			" ( function f ( a , b ) { } ) ;",
+			" <span class=\"punctuator\">(</span>"
+			+" <span class=\"keyword\">function</span>"
+			+" <span class=\"identifier\">f</span>"
+			+" <span class=\"punctuator\">(</span>"
+			+" <span class=\"identifier\">a</span>"
+			+" <span class=\"punctuator\">,</span>"
+			+" <span class=\"identifier\">b</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"punctuator\">{</span>"
+			+" <span class=\"punctuator\">}</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+	});
+
+	Tests.run(function testGenerateHtmlExpressionInfix() {
+		assertGenerateHtmlStatement(
+			" a | b ;",
+			" <span class=\"identifier\">a</span>"
+			+" <span class=\"punctuator\">|</span>"
+			+" <span class=\"identifier\">b</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+	});
+
+	Tests.run(function testGenerateHtmlExpressionInvocation() {
+		assertGenerateHtmlStatement(
+			" f ( ) ;",
+			" <span class=\"identifier\">f</span>"
+			+" <span class=\"punctuator\">(</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+		assertGenerateHtmlStatement(
+			" f ( a , b ) ;",
+			" <span class=\"identifier\">f</span>"
+			+" <span class=\"punctuator\">(</span>"
+			+" <span class=\"identifier\">a</span>"
+			+" <span class=\"punctuator\">,</span>"
+			+" <span class=\"identifier\">b</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+	});
+
+	Tests.run(function testGenerateHtmlExpressionLambda() {
+		assertGenerateHtmlStatement(
+			" f => 0 ;",
+			" <span class=\"identifier\">f</span>"
+			+" <span class=\"punctuator\">=&gt;</span>"
+			+" <span class=\"number\">0</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+		assertGenerateHtmlStatement(
+			" ( ) => 0 ;",
+			" <span class=\"punctuator\">(</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"punctuator\">=&gt;</span>"
+			+" <span class=\"number\">0</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+		assertGenerateHtmlStatement(
+			" ( a , b ) => { } ;",
+			" <span class=\"punctuator\">(</span>"
+			+" <span class=\"identifier\">a</span>"
+			+" <span class=\"punctuator\">,</span>"
+			+" <span class=\"identifier\">b</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"punctuator\">=&gt;</span>"
+			+" <span class=\"punctuator\">{</span>"
+			+" <span class=\"punctuator\">}</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+	});
+
+	Tests.run(function testGenerateHtmlExpressionLiteral() {
+		assertGenerateHtmlStatement(
+			" 0 ;",
+			" <span class=\"number\">0</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+		assertGenerateHtmlStatement(
+			" 'character' ;",
+			" <span class=\"character\">'character'</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+		assertGenerateHtmlStatement(
+			" \"string\" ;",
+			" <span class=\"string\">\"string\"</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+		assertGenerateHtmlStatement(
+			" /regex/ ;",
+			" <span class=\"regex\">/regex/</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+	});
+
+	Tests.run(function testGenerateHtmlExpressionMemberAccess() {
+		assertGenerateHtmlStatement(
+			" a . b ;",
+			" <span class=\"identifier\">a</span>"
+			+" <span class=\"punctuator\">.</span>"
+			+" <span class=\"identifier\">b</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+	});
+
+	Tests.run(function testGenerateHtmlExpressionObjectLiteral() {
+		assertGenerateHtmlStatement(
+			" ( { a : value1 , b : value2 } ) ;",
+			" <span class=\"punctuator\">(</span>"
+			+" <span class=\"punctuator\">{</span>"
+			+" <span class=\"identifier\">a</span>"
+			+" <span class=\"punctuator\">:</span>"
+			+" <span class=\"identifier\">value1</span>"
+			+" <span class=\"punctuator\">,</span>"
+			+" <span class=\"identifier\">b</span>"
+			+" <span class=\"punctuator\">:</span>"
+			+" <span class=\"identifier\">value2</span>"
+			+" <span class=\"punctuator\">}</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+		assertGenerateHtmlStatement(
+			" ( { 0 : value1 , 1 : value2 } ) ;",
+			" <span class=\"punctuator\">(</span>"
+			+" <span class=\"punctuator\">{</span>"
+			+" <span class=\"number\">0</span>"
+			+" <span class=\"punctuator\">:</span>"
+			+" <span class=\"identifier\">value1</span>"
+			+" <span class=\"punctuator\">,</span>"
+			+" <span class=\"number\">1</span>"
+			+" <span class=\"punctuator\">:</span>"
+			+" <span class=\"identifier\">value2</span>"
+			+" <span class=\"punctuator\">}</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+		assertGenerateHtmlStatement(
+			" ( { [ e1 ] : value1 , [ e2 ] : value2 } ) ;",
+			" <span class=\"punctuator\">(</span>"
+			+" <span class=\"punctuator\">{</span>"
+			+" <span class=\"punctuator\">[</span>"
+			+" <span class=\"identifier\">e1</span>"
+			+" <span class=\"punctuator\">]</span>"
+			+" <span class=\"punctuator\">:</span>"
+			+" <span class=\"identifier\">value1</span>"
+			+" <span class=\"punctuator\">,</span>"
+			+" <span class=\"punctuator\">[</span>"
+			+" <span class=\"identifier\">e2</span>"
+			+" <span class=\"punctuator\">]</span>"
+			+" <span class=\"punctuator\">:</span>"
+			+" <span class=\"identifier\">value2</span>"
+			+" <span class=\"punctuator\">}</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+		assertGenerateHtmlStatement(
+			" ( { method1 ( ) { } , method2 ( a , b ) { } } ) ;",
+			" <span class=\"punctuator\">(</span>"
+			+" <span class=\"punctuator\">{</span>"
+			+" <span class=\"identifier\">method1</span>"
+			+" <span class=\"punctuator\">(</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"punctuator\">{</span>"
+			+" <span class=\"punctuator\">}</span>"
+			+" <span class=\"punctuator\">,</span>"
+			+" <span class=\"identifier\">method2</span>"
+			+" <span class=\"punctuator\">(</span>"
+			+" <span class=\"identifier\">a</span>"
+			+" <span class=\"punctuator\">,</span>"
+			+" <span class=\"identifier\">b</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"punctuator\">{</span>"
+			+" <span class=\"punctuator\">}</span>"
+			+" <span class=\"punctuator\">}</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+	});
+
+	Tests.run(function testGenerateHtmlExpressionParenthesized() {
+		assertGenerateHtmlStatement(
+			" ( a ) ;",
+			" <span class=\"punctuator\">(</span>"
+			+" <span class=\"identifier\">a</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+	});
+
+	Tests.run(function testGenerateHtmlExpressionPostfix() {
+		assertGenerateHtmlStatement(
+			" a ++ ;",
+			" <span class=\"identifier\">a</span>"
+			+" <span class=\"punctuator\">++</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+	});
+
+	Tests.run(function testGenerateHtmlExpressionPrefix() {
+		assertGenerateHtmlStatement(
+			" ++ a ;",
+			" <span class=\"punctuator\">++</span>"
+			+" <span class=\"identifier\">a</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+	});
+
+	Tests.run(function testGenerateHtmlExpressionScopeAccess() {
+		assertGenerateHtmlStatement(
+			" a ;",
+			" <span class=\"identifier\">a</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+	});
+
+	Tests.run(function testGenerateHtmlExpressionTernary() {
+		assertGenerateHtmlStatement(
+			" a ? b : c ;",
+			" <span class=\"identifier\">a</span>"
+			+" <span class=\"punctuator\">?</span>"
+			+" <span class=\"identifier\">b</span>"
+			+" <span class=\"punctuator\">:</span>"
+			+" <span class=\"identifier\">c</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+	});
+
+	Tests.run(function testGenerateHtmlMethod() {
+		assertGenerateHtmlStatement(
+			" class Class { method ( ) { } }",
+			" <span class=\"keyword\">class</span>"
+			+" <span class=\"identifier\">Class</span>"
+			+" <span class=\"punctuator\">{</span>"
+			+" <span class=\"identifier\">method</span>"
+			+" <span class=\"punctuator\">(</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"punctuator\">{</span>"
+			+" <span class=\"punctuator\">}</span>"
+			+" <span class=\"punctuator\">}</span>"
+		);
+		assertGenerateHtmlStatement(
+			" class Class { @ annotation1 @ annotation2 static method ( a , b ) { } }",
+			" <span class=\"keyword\">class</span>"
+			+" <span class=\"identifier\">Class</span>"
+			+" <span class=\"punctuator\">{</span>"
+			+" <span class=\"punctuator\">@</span>"
+			+" <span class=\"identifier\">annotation1</span>"
+			+" <span class=\"punctuator\">@</span>"
+			+" <span class=\"identifier\">annotation2</span>"
+			+" <span class=\"keyword\">static</span>"
+			+" <span class=\"identifier\">method</span>"
+			+" <span class=\"punctuator\">(</span>"
+			+" <span class=\"identifier\">a</span>"
+			+" <span class=\"punctuator\">,</span>"
+			+" <span class=\"identifier\">b</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"punctuator\">{</span>"
+			+" <span class=\"punctuator\">}</span>"
+			+" <span class=\"punctuator\">}</span>"
+		);
+	});
+
+	Tests.run(function testGenerateHtmlSource() {
+		const result=Compiler.parseJavascript("sourceId", " ");
+		Assertions.assertEqual(result.statementTrees.length, 0);
+		const generator=Compiler.newJavascriptGenerator();
+		result.generate(generator);
+		Assertions.assertEqual(generator.build(), " ");
+	});
+
+	Tests.run(function testGenerateHtmlStatementBreak() {
+		assertGenerateHtmlStatement(
+			" break ;",
+			" <span class=\"keyword\">break</span> <span class=\"punctuator\">;</span>"
+		);
+		assertGenerateHtmlStatement(
+			" label1 : label2 : break label ;",
+			" <span class=\"identifier\">label1</span> <span class=\"punctuator\">:</span>"
+			+" <span class=\"identifier\">label2</span> <span class=\"punctuator\">:</span>"
+			+" <span class=\"keyword\">break</span>"
+			+" <span class=\"identifier\">label</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+	});
+
+	Tests.run(function testGenerateHtmlStatementClass() {
+		assertGenerateHtmlStatement(
+			" class Class { }",
+			" <span class=\"keyword\">class</span>"
+			+" <span class=\"identifier\">Class</span>"
+			+" <span class=\"punctuator\">{</span>"
+			+" <span class=\"punctuator\">}</span>"
+		);
+
+		assertGenerateHtmlStatement(
+			" @ native class Class { }",
+			" <span class=\"punctuator\">@</span>"
+			+" <span class=\"identifier\">native</span>"
+			+" <span class=\"keyword\">class</span>"
+			+" <span class=\"identifier\">Class</span>"
+			+" <span class=\"punctuator\">{</span>"
+			+" <span class=\"punctuator\">}</span>"
+		);
+
+		assertGenerateHtmlStatement(
+			" @ annotation class Class extends Base { }",
+			" <span class=\"punctuator\">@</span>"
+			+" <span class=\"identifier\">annotation</span>"
+			+" <span class=\"keyword\">class</span>"
+			+" <span class=\"identifier\">Class</span>"
+			+" <span class=\"keyword\">extends</span>"
+			+" <span class=\"identifier\">Base</span>"
+			+" <span class=\"punctuator\">{</span>"
+			+" <span class=\"punctuator\">}</span>"
+		);
+	});
+
+	Tests.run(function testGenerateHtmlStatementContinue() {
+		assertGenerateHtmlStatement(
+			" continue ;",
+			" <span class=\"keyword\">continue</span> <span class=\"punctuator\">;</span>"
+		);
+		assertGenerateHtmlStatement(
+			" label1 : label2 : continue label ;",
+			" <span class=\"identifier\">label1</span> <span class=\"punctuator\">:</span>"
+			+" <span class=\"identifier\">label2</span> <span class=\"punctuator\">:</span>"
+			+" <span class=\"keyword\">continue</span>"
+			+" <span class=\"identifier\">label</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+	});
+
+	Tests.run(function testGenerateHtmlStatementDo() {
+		assertGenerateHtmlStatement(
+			" do a ; while ( condition ) ;",
+			" <span class=\"keyword\">do</span>"
+			+" <span class=\"identifier\">a</span>"
+			+" <span class=\"punctuator\">;</span>"
+			+" <span class=\"keyword\">while</span>"
+			+" <span class=\"punctuator\">(</span>"
+			+" <span class=\"identifier\">condition</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+		assertGenerateHtmlStatement(
+			" label1 : label2 : do a ; while ( condition ) ;",
+			" <span class=\"identifier\">label1</span> <span class=\"punctuator\">:</span>"
+			+" <span class=\"identifier\">label2</span> <span class=\"punctuator\">:</span>"
+			+" <span class=\"keyword\">do</span>"
+			+" <span class=\"identifier\">a</span>"
+			+" <span class=\"punctuator\">;</span>"
+			+" <span class=\"keyword\">while</span>"
+			+" <span class=\"punctuator\">(</span>"
+			+" <span class=\"identifier\">condition</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+	});
+
+	Tests.run(function testGenerateHtmlStatementExpression() {
+		assertGenerateHtmlStatement(
+			" a ;",
+			" <span class=\"identifier\">a</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+		assertGenerateHtmlStatement(
+			" label1 : label2 : a ;",
+			" <span class=\"identifier\">label1</span> <span class=\"punctuator\">:</span>"
+			+" <span class=\"identifier\">label2</span> <span class=\"punctuator\">:</span>"
+			+" <span class=\"identifier\">a</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+	});
+
+	Tests.run(function testGenerateHtmlStatementFor() {
+		assertGenerateHtmlStatement(
+			" for ( initializer ; condition ; increment ) ;",
+			" <span class=\"keyword\">for</span>"
+			+" <span class=\"punctuator\">(</span>"
+			+" <span class=\"identifier\">initializer</span>"
+			+" <span class=\"punctuator\">;</span>"
+			+" <span class=\"identifier\">condition</span>"
+			+" <span class=\"punctuator\">;</span>"
+			+" <span class=\"identifier\">increment</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+		assertGenerateHtmlStatement(
+			" for ( const initializer = 0 ; condition ; increment ) ;",
+			" <span class=\"keyword\">for</span>"
+			+" <span class=\"punctuator\">(</span>"
+			+" <span class=\"keyword\">const</span>"
+			+" <span class=\"identifier\">initializer</span>"
+			+" <span class=\"punctuator\">=</span>"
+			+" <span class=\"number\">0</span>"
+			+" <span class=\"punctuator\">;</span>"
+			+" <span class=\"identifier\">condition</span>"
+			+" <span class=\"punctuator\">;</span>"
+			+" <span class=\"identifier\">increment</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+		assertGenerateHtmlStatement(
+			" for ( let initializer = 0 ; condition ; increment ) ;",
+			" <span class=\"keyword\">for</span>"
+			+" <span class=\"punctuator\">(</span>"
+			+" <span class=\"keyword\">let</span>"
+			+" <span class=\"identifier\">initializer</span>"
+			+" <span class=\"punctuator\">=</span>"
+			+" <span class=\"number\">0</span>"
+			+" <span class=\"punctuator\">;</span>"
+			+" <span class=\"identifier\">condition</span>"
+			+" <span class=\"punctuator\">;</span>"
+			+" <span class=\"identifier\">increment</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+		assertGenerateHtmlStatement(
+			" for ( var initializer = 0 ; condition ; increment ) ;",
+			" <span class=\"keyword\">for</span>"
+			+" <span class=\"punctuator\">(</span>"
+			+" <span class=\"keyword\">var</span>"
+			+" <span class=\"identifier\">initializer</span>"
+			+" <span class=\"punctuator\">=</span>"
+			+" <span class=\"number\">0</span>"
+			+" <span class=\"punctuator\">;</span>"
+			+" <span class=\"identifier\">condition</span>"
+			+" <span class=\"punctuator\">;</span>"
+			+" <span class=\"identifier\">increment</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+		assertGenerateHtmlStatement(
+			" label1 : label2 : for ( ; ; ) ;",
+			" <span class=\"identifier\">label1</span> <span class=\"punctuator\">:</span>"
+			+" <span class=\"identifier\">label2</span> <span class=\"punctuator\">:</span>"
+			+" <span class=\"keyword\">for</span>"
+			+" <span class=\"punctuator\">(</span>"
+			+" <span class=\"punctuator\">;</span>"
+			+" <span class=\"punctuator\">;</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+	});
+
+	Tests.run(function testGenerateHtmlStatementForEach() {
+		assertGenerateHtmlStatement(
+			" for ( const a in object ) ;",
+			" <span class=\"keyword\">for</span>"
+			+" <span class=\"punctuator\">(</span>"
+			+" <span class=\"keyword\">const</span>"
+			+" <span class=\"identifier\">a</span>"
+			+" <span class=\"keyword\">in</span>"
+			+" <span class=\"identifier\">object</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+		assertGenerateHtmlStatement(
+			" for ( let a in object ) ;",
+			" <span class=\"keyword\">for</span>"
+			+" <span class=\"punctuator\">(</span>"
+			+" <span class=\"keyword\">let</span>"
+			+" <span class=\"identifier\">a</span>"
+			+" <span class=\"keyword\">in</span>"
+			+" <span class=\"identifier\">object</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+		assertGenerateHtmlStatement(
+			" for ( var a in object ) ;",
+			" <span class=\"keyword\">for</span>"
+			+" <span class=\"punctuator\">(</span>"
+			+" <span class=\"keyword\">var</span>"
+			+" <span class=\"identifier\">a</span>"
+			+" <span class=\"keyword\">in</span>"
+			+" <span class=\"identifier\">object</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+		assertGenerateHtmlStatement(
+			" label1 : label2 : for ( a of iterable ) ;",
+			" <span class=\"identifier\">label1</span> <span class=\"punctuator\">:</span>"
+			+" <span class=\"identifier\">label2</span> <span class=\"punctuator\">:</span>"
+			+" <span class=\"keyword\">for</span>"
+			+" <span class=\"punctuator\">(</span>"
+			+" <span class=\"identifier\">a</span>"
+			+" <span class=\"keyword\">of</span>"
+			+" <span class=\"identifier\">iterable</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+	});
+
+	Tests.run(function testGenerateHtmlStatementFunction() {
+		assertGenerateHtmlStatement(
+			" function f ( ) { }",
+			" <span class=\"keyword\">function</span>"
+			+" <span class=\"identifier\">f</span>"
+			+" <span class=\"punctuator\">(</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"punctuator\">{</span>"
+			+" <span class=\"punctuator\">}</span>"
+		);
+		assertGenerateHtmlStatement(
+			" @ native function f ( ) { }",
+			" <span class=\"punctuator\">@</span>"
+			+" <span class=\"identifier\">native</span>"
+			+" <span class=\"keyword\">function</span>"
+			+" <span class=\"identifier\">f</span>"
+			+" <span class=\"punctuator\">(</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"punctuator\">{</span>"
+			+" <span class=\"punctuator\">}</span>"
+		);
+	});
+
+	Tests.run(function testGenerateHtmlStatementIf() {
+		assertGenerateHtmlStatement(
+			" if ( condition ) a ;",
+			" <span class=\"keyword\">if</span>"
+			+" <span class=\"punctuator\">(</span>"
+			+" <span class=\"identifier\">condition</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"identifier\">a</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+		assertGenerateHtmlStatement(
+			" label1 : label2 : if ( condition ) a ; else b ;",
+			" <span class=\"identifier\">label1</span> <span class=\"punctuator\">:</span>"
+			+" <span class=\"identifier\">label2</span> <span class=\"punctuator\">:</span>"
+			+" <span class=\"keyword\">if</span>"
+			+" <span class=\"punctuator\">(</span>"
+			+" <span class=\"identifier\">condition</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"identifier\">a</span>"
+			+" <span class=\"punctuator\">;</span>"
+			+" <span class=\"keyword\">else</span>"
+			+" <span class=\"identifier\">b</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+	});
+
+	Tests.run(function testGenerateHtmlStatementReturn() {
+		assertGenerateHtmlStatement(
+			" return ;",
+			" <span class=\"keyword\">return</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+		assertGenerateHtmlStatement(
+			" return expression ;",
+			" <span class=\"keyword\">return</span>"
+			+" <span class=\"identifier\">expression</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+	});
+
+	Tests.run(function testGenerateHtmlStatementSwitch() {
+		assertGenerateHtmlStatement(
+			" label1 : label2 : switch ( condition ) { case a : expression1 ; default : expression2 ; }",
+			" <span class=\"identifier\">label1</span> <span class=\"punctuator\">:</span>"
+			+" <span class=\"identifier\">label2</span> <span class=\"punctuator\">:</span>"
+			+" <span class=\"keyword\">switch</span>"
+			+" <span class=\"punctuator\">(</span>"
+			+" <span class=\"identifier\">condition</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"punctuator\">{</span>"
+			+" <span class=\"keyword\">case</span>"
+			+" <span class=\"identifier\">a</span>"
+			+" <span class=\"punctuator\">:</span>"
+			+" <span class=\"identifier\">expression1</span>"
+			+" <span class=\"punctuator\">;</span>"
+			+" <span class=\"keyword\">default</span>"
+			+" <span class=\"punctuator\">:</span>"
+			+" <span class=\"identifier\">expression2</span>"
+			+" <span class=\"punctuator\">;</span>"
+			+" <span class=\"punctuator\">}</span>"
+		);
+	});
+
+	Tests.run(function testGenerateHtmlStatementThrow() {
+		assertGenerateHtmlStatement(
+			" throw expression ;",
+			" <span class=\"keyword\">throw</span>"
+			+" <span class=\"identifier\">expression</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+	});
+
+	Tests.run(function testGenerateHtmlStatementTry() {
+		assertGenerateHtmlStatement(
+			" label1 : label2 : try { }",
+			" <span class=\"identifier\">label1</span> <span class=\"punctuator\">:</span>"
+			+" <span class=\"identifier\">label2</span> <span class=\"punctuator\">:</span>"
+			+" <span class=\"keyword\">try</span>"
+			+" <span class=\"punctuator\">{</span>"
+			+" <span class=\"punctuator\">}</span>"
+		);
+		assertGenerateHtmlStatement(
+			" try { } catch ( e ) { }",
+			" <span class=\"keyword\">try</span>"
+			+" <span class=\"punctuator\">{</span>"
+			+" <span class=\"punctuator\">}</span>"
+			+" <span class=\"keyword\">catch</span>"
+			+" <span class=\"punctuator\">(</span>"
+			+" <span class=\"identifier\">e</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"punctuator\">{</span>"
+			+" <span class=\"punctuator\">}</span>"
+		);
+		assertGenerateHtmlStatement(
+			" try { } finally { }",
+			" <span class=\"keyword\">try</span>"
+			+" <span class=\"punctuator\">{</span>"
+			+" <span class=\"punctuator\">}</span>"
+			+" <span class=\"keyword\">finally</span>"
+			+" <span class=\"punctuator\">{</span>"
+			+" <span class=\"punctuator\">}</span>"
+		);
+	});
+
+	Tests.run(function testGenerateHtmlStatementWhile() {
+		assertGenerateHtmlStatement(
+			" while ( condition ) expression ;",
+			" <span class=\"keyword\">while</span>"
+			+" <span class=\"punctuator\">(</span>"
+			+" <span class=\"identifier\">condition</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"identifier\">expression</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+		assertGenerateHtmlStatement(
+			" label1 : label2 : while ( condition ) expression ;",
+			" <span class=\"identifier\">label1</span> <span class=\"punctuator\">:</span>"
+			+" <span class=\"identifier\">label2</span> <span class=\"punctuator\">:</span>"
+			+" <span class=\"keyword\">while</span>"
+			+" <span class=\"punctuator\">(</span>"
+			+" <span class=\"identifier\">condition</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"identifier\">expression</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+	});
+
+	Tests.run(function testGenerateHtmlStatementVar() {
+		assertGenerateHtmlStatement(
+			" var a , b = 1 ;",
+			" <span class=\"keyword\">var</span>"
+			+" <span class=\"identifier\">a</span>"
+			+" <span class=\"punctuator\">,</span>"
+			+" <span class=\"identifier\">b</span>"
+			+" <span class=\"punctuator\">=</span>"
+			+" <span class=\"number\">1</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+		assertGenerateHtmlStatement(
+			" @ native var a , b = 1 ;",
+			" <span class=\"punctuator\">@</span>"
+			+" <span class=\"identifier\">native</span>"
+			+" <span class=\"keyword\">var</span>"
+			+" <span class=\"identifier\">a</span>"
+			+" <span class=\"punctuator\">,</span>"
+			+" <span class=\"identifier\">b</span>"
+			+" <span class=\"punctuator\">=</span>"
+			+" <span class=\"number\">1</span>"
+			+" <span class=\"punctuator\">;</span>"
+		);
+	});
+
+	function assertGenerateCoverageStatement(input, expected) {
+		const result=Compiler.parseJavascript("sourceId", input);
+		Assertions.assertEqual(result.statementTrees.length, 1);
+		const generator=Compiler.newCoverageGenerator(0);
+		result.statementTrees[0].generate(generator, true);
+		Assertions.assertEqual(generator.build(), expected!==undefined ? expected : input);
+	}
+
+	Tests.run(function testGenerateCoverageBlock() {
+		assertGenerateCoverageStatement(" { }");
+		assertGenerateCoverageStatement("label1: label2: { }");
+	});
+
+	Tests.run(function testGenerateCoverageEmpty() {
+		assertGenerateCoverageStatement(" ;");
+		assertGenerateCoverageStatement("label1: label2: ;");
+	});
+
+	Tests.run(function testGenerateCoverageExpressionArrayAccess() {
+		assertGenerateCoverageStatement(" a [ b ] ;", " window[\"##oct##e\"](0,  a [ b ]) ;");
+	});
+
+	Tests.run(function testGenerateCoverageExpressionArrayLiteral() {
+		assertGenerateCoverageStatement(" [ ] ;", " window[\"##oct##e\"](0,  [ ]) ;");
+		assertGenerateCoverageStatement(" [ a , b ] ;", " window[\"##oct##e\"](0,  [ a , b ]) ;");
+	});
+
+	Tests.run(function testGenerateCoverageExpressionAssign() {
+		assertGenerateCoverageStatement(" a = b ;", " window[\"##oct##e\"](0,  a = b) ;");
+	});
+
+	Tests.run(function testGenerateCoverageExpressionClass() {
+		assertGenerateCoverageStatement(" ( class { } ) ;", " window[\"##oct##e\"](0,  ( class { } )) ;");
+		assertGenerateCoverageStatement(" ( class Class extends Base { } ) ;", " window[\"##oct##e\"](0,  ( class Class extends Base { } )) ;");
+	});
+
+	Tests.run(function testGenerateCoverageExpressionFunction() {
+		assertGenerateCoverageStatement(" ( function() { } ) ;", " window[\"##oct##e\"](0,  ( function() { } )) ;");
+		assertGenerateCoverageStatement(" ( function f ( a , b ) { } ) ;", " window[\"##oct##e\"](0,  ( function f ( a , b ) { } )) ;");
+	});
+
+	Tests.run(function testGenerateCoverageExpressionInfix() {
+		assertGenerateCoverageStatement(" a | b ;", " window[\"##oct##e\"](0,  a | b) ;");
+	});
+
+	Tests.run(function testGenerateCoverageExpressionInfixLogicalAnd() {
+		assertGenerateCoverageStatement(" a && b ;", " window[\"##oct##e\"](0,  a && window[\"##oct##e\"](1,  b)) ;");
+	});
+
+	Tests.run(function testGenerateCoverageExpressionInfix() {
+		assertGenerateCoverageStatement(" a || b ;", " window[\"##oct##e\"](0,  a || window[\"##oct##e\"](1,  b)) ;");
+	});
+
+	Tests.run(function testGenerateCoverageExpressionInvocation() {
+		assertGenerateCoverageStatement(" ( f ( ) ) ;", " window[\"##oct##e\"](0,  ( f ( ) )) ;");
+		assertGenerateCoverageStatement(" ( f ( a , b ) ) ;", " window[\"##oct##e\"](0,  ( f ( a , b ) )) ;");
+	});
+
+	Tests.run(function testGenerateCoverageExpressionLambda() {
+		assertGenerateCoverageStatement(
+			" f => 0 ;",
+			" window[\"##oct##e\"](0,  f => 0) ;"
+		);
+		assertGenerateCoverageStatement(
+			" ( ) => 0 ;",
+			" window[\"##oct##e\"](0,  ( ) => 0) ;"
+		);
+		assertGenerateCoverageStatement(
+			" ( a , b ) => { } ;",
+			" window[\"##oct##e\"](0,  ( a , b ) => { }) ;"
+		);
+	});
+
+	Tests.run(function testGenerateCoverageExpressionLiteral() {
+		assertGenerateCoverageStatement(" 0 ;", " window[\"##oct##e\"](0,  0) ;");
+		assertGenerateCoverageStatement(" 'character' ;", " window[\"##oct##e\"](0,  'character') ;");
+		assertGenerateCoverageStatement(" \"string\" ;", " window[\"##oct##e\"](0,  \"string\") ;");
+		assertGenerateCoverageStatement(" /regex/ ;", " window[\"##oct##e\"](0,  /regex/) ;");
+	});
+
+	Tests.run(function testGenerateCoverageExpressionMemberAccess() {
+		assertGenerateCoverageStatement(" a . b ;", " window[\"##oct##e\"](0,  a . b) ;");
+	});
+
+	Tests.run(function testGenerateCoverageExpressionObjectLiteral() {
+		assertGenerateCoverageStatement(
+			" ( { a : value1 , b : value2 } ) ;",
+			" window[\"##oct##e\"](0,  ( { a : window[\"##oct##e\"](1,  value1) , b : window[\"##oct##e\"](2,  value2) } )) ;"
+		);
+		assertGenerateCoverageStatement(
+			" ( { 0 : value1 , 1 : value2 } ) ;",
+			" window[\"##oct##e\"](0,  ( { 0 : window[\"##oct##e\"](1,  value1) , 1 : window[\"##oct##e\"](2,  value2) } )) ;"
+		);
+		assertGenerateCoverageStatement(
+			" ( { [ e1 ] : value1 , [ e2 ] : value2 } ) ;",
+			" window[\"##oct##e\"](0,  ( {"
+				+" [ window[\"##oct##e\"](1,  e1) ] : window[\"##oct##e\"](2,  value1) ,"
+				+" [ window[\"##oct##e\"](3,  e2) ] : window[\"##oct##e\"](4,  value2)"
+			+" } )) ;"
+		);
+		assertGenerateCoverageStatement(
+			" ( { method1 ( ) { } , method2 ( a, b ) { } } ) ;",
+			" window[\"##oct##e\"](0,  ( { method1 ( ) { } , method2 ( a, b ) { } } )) ;"
+		);
+	});
+
+	Tests.run(function testGenerateCoverageExpressionParenthesized() {
+		assertGenerateCoverageStatement(" ( a ) ;", " window[\"##oct##e\"](0,  ( a )) ;");
+	});
+
+	Tests.run(function testGenerateCoverageExpressionPostfix() {
+		assertGenerateCoverageStatement(" a ++ ; ", " window[\"##oct##e\"](0,  a ++) ;");
+	});
+
+	Tests.run(function testGenerateCoverageExpressionPrefix() {
+		assertGenerateCoverageStatement(" ++ a ;", " window[\"##oct##e\"](0,  ++ a) ;");
+	});
+
+	Tests.run(function testGenerateCoverageExpressionScopeAccess() {
+		assertGenerateCoverageStatement(" a ;", " window[\"##oct##e\"](0,  a) ;");
+	});
+
+	Tests.run(function testGenerateCoverageExpressionTernary() {
+		assertGenerateCoverageStatement(
+			" a ? b : c ;",
+			" window[\"##oct##e\"](0,  a ? window[\"##oct##e\"](1,  b) : window[\"##oct##e\"](2,  c)) ;"
+		);
+	});
+
+	Tests.run(function testGenerateCoverageMethod() {
+		assertGenerateCoverageStatement(" class Class { method ( ) { } }");
+		assertGenerateCoverageStatement(
+			" class Class { @ annotation1 @ annotation2 static method ( a , b ) { } }",
+			" class Class {/*  @ annotation1 @ annotation2 */ static method ( a , b ) { } }"
+		);
+	});
+
+	Tests.run(function testGenerateCoverageSource() {
+		const result=Compiler.parseJavascript("sourceId", " ");
+		Assertions.assertEqual(result.statementTrees.length, 0);
+		const generator=Compiler.newCoverageGenerator(0);
+		result.generate(generator, true);
+		Assertions.assertEqual(generator.build(), " ");
+	});
+
+	Tests.run(function testGenerateCoverageStatementBreak() {
+		assertGenerateCoverageStatement(" break ;");
+		assertGenerateCoverageStatement(" label1 : label2 : break label ;");
+	});
+
+	Tests.run(function testGenerateCoverageStatementClass() {
+		assertGenerateCoverageStatement(" class Class { }");
+		assertGenerateCoverageStatement(" @native class Class { }", "/*  @native class Class { } */");
+
+		assertGenerateCoverageStatement(
+			" @annotation class Class extends Base { }",
+			"/*  @annotation */ class Class extends Base { }"
+		);
+	});
+
+	Tests.run(function testGenerateCoverageStatementContinue() {
+		assertGenerateCoverageStatement(" continue ;");
+		assertGenerateCoverageStatement(" label1 : label2 : continue label ;");
+	});
+
+	Tests.run(function testGenerateCoverageStatementDo() {
+		assertGenerateCoverageStatement(
+			" do a ; while ( condition ) ;",
+			" do window[\"##oct##e\"](0,  a) ; while ( window[\"##oct##c\"](1,  condition) ) ;"
+		);
+		assertGenerateCoverageStatement(
+			" label1 : label2 : do a ; while ( condition ) ;",
+			" label1 : label2 : do window[\"##oct##e\"](0,  a) ; while ( window[\"##oct##c\"](1,  condition) ) ;"
+		);
+	});
+
+	Tests.run(function testGenerateCoverageStatementExpression() {
+		assertGenerateCoverageStatement(" a ;", " window[\"##oct##e\"](0,  a) ;");
+		assertGenerateCoverageStatement(" label1 : label2 : a ;", " label1 : label2 : window[\"##oct##e\"](0,  a) ;");
+	});
+
+	Tests.run(function testGenerateCoverageStatementFor() {
+		assertGenerateCoverageStatement(
+			" for ( initializer ; condition ; increment) ;",
+			" for ( window[\"##oct##e\"](0,  initializer) ; window[\"##oct##c\"](1,  condition) ; window[\"##oct##e\"](2,  increment)) ;"
+		);
+		assertGenerateCoverageStatement(
+			" for ( const initializer = 0 ; condition ; increment) ;",
+			" for ( const initializer = window[\"##oct##e\"](0,  0) ; window[\"##oct##c\"](1,  condition) ; window[\"##oct##e\"](2,  increment)) ;"
+		);
+		assertGenerateCoverageStatement(
+			" for ( let initializer = 0 ; condition ; increment) ;",
+			" for ( let initializer = window[\"##oct##e\"](0,  0) ; window[\"##oct##c\"](1,  condition) ; window[\"##oct##e\"](2,  increment)) ;"
+		);
+		assertGenerateCoverageStatement(
+			" for ( var initializer = 0 ; condition ; increment) ;",
+			" for ( var initializer = window[\"##oct##e\"](0,  0) ; window[\"##oct##c\"](1,  condition) ; window[\"##oct##e\"](2,  increment)) ;"
+		);
+		assertGenerateCoverageStatement(" label1 : label2 : for ( ; ; ) ;");
+	});
+
+	Tests.run(function testGenerateCoverageStatementForEach() {
+		assertGenerateCoverageStatement(" for ( const a in object ) ;", " for ( const a in window[\"##oct##e\"](0,  object) ) ;");
+		assertGenerateCoverageStatement(" for ( let a in object ) ;", " for ( let a in window[\"##oct##e\"](0,  object) ) ;");
+		assertGenerateCoverageStatement(" for ( var a in object ) ;", " for ( var a in window[\"##oct##e\"](0,  object) ) ;");
+		assertGenerateCoverageStatement(" label1 : label2 : for ( a of iterable ) ;", " label1 : label2 : for ( a of window[\"##oct##e\"](0,  iterable) ) ;");
+	});
+
+	Tests.run(function testGenerateCoverageStatementFunction() {
+		assertGenerateCoverageStatement(" function f ( ) { }");
+		assertGenerateCoverageStatement(" @native function f ( ) { }", "/*  @native function f ( ) { } */");
+	});
+
+	Tests.run(function testGenerateCoverageStatementIf() {
+		assertGenerateCoverageStatement(
+			" if ( condition ) a ;",
+			" if ( window[\"##oct##c\"](0,  condition) ) window[\"##oct##e\"](1,  a) ;"
+		);
+		assertGenerateCoverageStatement(
+			" label1 : label2 : if ( condition ) a ; else b ;",
+			" label1 : label2 : if ( window[\"##oct##c\"](0,  condition) ) window[\"##oct##e\"](1,  a) ; else window[\"##oct##e\"](2,  b) ;"
+		);
+	});
+
+	Tests.run(function testGenerateCoverageStatementReturn() {
+		assertGenerateCoverageStatement(" return ;");
+		assertGenerateCoverageStatement(" return expression ;", " return window[\"##oct##e\"](0,  expression) ;");
+	});
+
+	Tests.run(function testGenerateCoverageStatementSwitch() {
+		assertGenerateCoverageStatement(
+			" label1 : label2 : switch ( condition ) { case a : expression1; default : expression2; }",
+			" label1 : label2 : switch ( window[\"##oct##e\"](0,  condition) ) {"
+			+" case window[\"##oct##e\"](1,  a) : window[\"##oct##e\"](2,  expression1);"
+			+" default : window[\"##oct##e\"](3,  expression2);"
+			+" }"
+		);
+	});
+
+	Tests.run(function testGenerateCoverageStatementThrow() {
+		assertGenerateCoverageStatement(" throw expression ;", " throw window[\"##oct##e\"](0,  expression) ;");
+	});
+
+	Tests.run(function testGenerateCoverageStatementTry() {
+		assertGenerateCoverageStatement(" label1 : label2 : try { }");
+		assertGenerateCoverageStatement(" try { } catch ( e ) { }");
+		assertGenerateCoverageStatement(" try { } finally { }");
+	});
+
+	Tests.run(function testGenerateCoverageStatementWhile() {
+		assertGenerateCoverageStatement(
+			" while ( condition ) expression ;",
+			" while ( window[\"##oct##c\"](0,  condition) ) window[\"##oct##e\"](1,  expression) ;"
+		);
+		assertGenerateCoverageStatement(
+			" label1 : label2 : while ( condition ) expression ;",
+			" label1 : label2 : while ( window[\"##oct##c\"](0,  condition) ) window[\"##oct##e\"](1,  expression) ;"
+		);
+	});
+
+	Tests.run(function testGenerateCoverageStatementVar() {
+		assertGenerateCoverageStatement(" var a , b = 1 ;", " var a , b = window[\"##oct##e\"](0,  1) ;");
+		assertGenerateCoverageStatement(" @native var a , b = 1 ;", "/*  @native var a , b = 1 ; */");
 	});
 
 })();

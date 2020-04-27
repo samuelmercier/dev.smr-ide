@@ -183,13 +183,13 @@ function defineJavascriptParser(Compiler) {
 				if(offset>=input.length||input.charCodeAt(offset)===10) {
 					newDiagnostic(start, offset, "syntax error: unterminated character constant");
 					const text=input.substring(start, offset);
-					const result=Compiler.newToken(source, trivias, lines.length, start, text, unescapeString(text.substring(1)));
+					const result=new Compiler.JavascriptTrees.Token.Character(source, trivias, lines.length, start, text, unescapeString(text.substring(1)));
 					scanTrivia();
 					return result;
 				}
 				else if(input.charCodeAt(offset)===39) { // '
 					const text=input.substring(start, ++offset);
-					const result=Compiler.newToken(source, trivias, lines.length, start, text, unescapeString(text.substring(1, text.length-1)));
+					const result=new Compiler.JavascriptTrees.Token.Character(source, trivias, lines.length, start, text, unescapeString(text.substring(1, text.length-1)));
 					scanTrivia();
 					return result;
 				}
@@ -198,7 +198,7 @@ function defineJavascriptParser(Compiler) {
 		function checkEndOfInput() {
 			if(offset<input.length)
 				return undefined;
-			return Compiler.newToken(source, trivias, lines.length, input.length, "", undefined);
+			return new Compiler.JavascriptTrees.Token.EndOfInput(source, trivias, lines.length, input.length, "", undefined);
 		}
 
 		function checkIdentifier() {
@@ -209,7 +209,7 @@ function defineJavascriptParser(Compiler) {
 			const identifier=input.substring(offset, end);
 			if(keywords.has(identifier))
 				return undefined;
-			const result=Compiler.newToken(source, trivias, lines.length, offset, identifier, undefined);
+			const result=new Compiler.JavascriptTrees.Token.Identifier(source, trivias, lines.length, offset, identifier, undefined);
 			offset=end;
 			scanTrivia();
 			return result;
@@ -229,7 +229,7 @@ function defineJavascriptParser(Compiler) {
 			while(isident(input.charCodeAt(++end)));
 			if(keyword!==input.substring(end, offset))
 				return undefined;
-			const result=Compiler.newToken(source, trivias, lines.length, offset, keyword, undefined);
+			const result=new Compiler.JavascriptTrees.Token.Keyword(source, trivias, lines.length, offset, keyword, undefined);
 			offset=end;
 			scanTrivia();
 			return result;
@@ -250,7 +250,7 @@ function defineJavascriptParser(Compiler) {
 			const keyword=input.substring(end, offset);
 			if(!keywords.has(keyword))
 				return undefined;
-			const result=Compiler.newToken(source, trivias, lines.length, offset, keyword, undefined);
+			const result=new Compiler.JavascriptTrees.Token.Keyword(source, trivias, lines.length, offset, keyword, undefined);
 			offset=end;
 			scanTrivia();
 			return result;
@@ -270,7 +270,7 @@ function defineJavascriptParser(Compiler) {
 			} catch(e) {
 				newDiagnostic(start, offset, "invalid number");
 			}
-			const result=Compiler.newToken(source, trivias, lines.length, start, text, value);
+			const result=new Compiler.JavascriptTrees.Token.Number(source, trivias, lines.length, start, text, value);
 			scanTrivia();
 			return result;
 		}
@@ -289,7 +289,7 @@ function defineJavascriptParser(Compiler) {
 				return undefined;
 			if(punctuators.entries.get(input.charCodeAt(offset+index))!==undefined)
 				return undefined;
-			const result=Compiler.newToken(source, trivias, lines.length, offset, punctuators.value);
+			const result=new Compiler.JavascriptTrees.Token.Punctuator(source, trivias, lines.length, offset, punctuators.value);
 			offset+=index;
 			scanTrivia();
 			return result;
@@ -306,7 +306,7 @@ function defineJavascriptParser(Compiler) {
 			}
 			if(entry===undefined||!values.has(entry.value))
 				return undefined;
-			const result=Compiler.newToken(source, trivias, lines.length, offset, entry.value);
+			const result=new Compiler.JavascriptTrees.Token.Punctuator(source, trivias, lines.length, offset, entry.value);
 			offset+=entry.value.length;
 			scanTrivia();
 			return result;
@@ -340,7 +340,7 @@ function defineJavascriptParser(Compiler) {
 			for(const start=offset++; ; offset+=input.charCodeAt(offset)===92&&offset+1<input.length ? 2 : 1)
 				if(offset>input.length||input.charCodeAt(offset)===10) {
 					newDiagnostic(start, input.length, "syntax error: unterminated regex constant");
-					const result=Compiler.newToken(source, trivias, lines.length, start, input.substring(start), undefined);
+					const result=new Compiler.JavascriptTrees.Token.Regex(source, trivias, lines.length, start, input.substring(start), undefined);
 					scanTrivia();
 					return result;
 				}
@@ -353,7 +353,7 @@ function defineJavascriptParser(Compiler) {
 					} catch(e) {
 						newDiagnostic(start, offset, e.message);
 					}
-					const result=Compiler.newToken(source, trivias, lines.length, start, input.substring(start, offset), regex);
+					const result=new Compiler.JavascriptTrees.Token.Regex(source, trivias, lines.length, start, input.substring(start, offset), regex);
 					scanTrivia();
 					return result;
 				}
@@ -366,13 +366,13 @@ function defineJavascriptParser(Compiler) {
 				if(offset>=input.length||input.charCodeAt(offset)===10) {
 					newDiagnostic(start, offset, "syntax error: unterminated string constant");
 					const text=input.substring(start, offset);
-					const result=Compiler.newToken(source, trivias, lines.length, start, text, unescapeString(input.substring(start+1, offset)));
+					const result=new Compiler.JavascriptTrees.Token.String(source, trivias, lines.length, start, text, unescapeString(input.substring(start+1, offset)));
 					scanTrivia();
 					return result;
 				}
 				else if(input.charCodeAt(offset)===34) {
 					const text=input.substring(start, ++offset);
-					const result=Compiler.newToken(source, trivias, lines.length, start, text, unescapeString(input.substring(start+1, offset-1)));
+					const result=new Compiler.JavascriptTrees.Token.String(source, trivias, lines.length, start, text, unescapeString(input.substring(start+1, offset-1)));
 					scanTrivia();
 					return result;
 				}

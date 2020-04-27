@@ -26,8 +26,8 @@ function defineJavascriptTrees(Compiler) {
 		generate(generator) {
 			generator.commentIn();
 			for(const annotationTree of this.annotationTrees) {
-				annotationTree.atToken.generate(generator);
-				annotationTree.nameToken.generate(generator);
+				generator.generate(annotationTree.atToken);
+				generator.generate(annotationTree.nameToken);
 			}
 			generator.commentOut();
 		}
@@ -64,10 +64,10 @@ function defineJavascriptTrees(Compiler) {
 		generate(generator) {
 			if(this.labelsTree!==undefined)
 				this.labelsTree.generate(generator);
-			this.openCurlyToken.generate(generator);
+			generator.generate(this.openCurlyToken);
 			for(const statementTree of this.statementTrees)
 				statementTree.generate(generator);
-			this.closeCurlyToken.generate(generator);
+			generator.generate(this.closeCurlyToken);
 		}
 
 		resolveBreak(analyzer, breakToken, nameToken) {
@@ -170,17 +170,17 @@ function defineJavascriptTrees(Compiler) {
 		}
 
 		generate(generator) {
-			this.classToken.generate(generator);
+			generator.generate(this.classToken);
 			if(this.nameToken!==undefined)
-				this.nameToken.generate(generator);
+				generator.generate(this.nameToken);
 			if(this.extendsClauseTree!==undefined) {
-				this.extendsClauseTree.extendsToken.generate(generator);
+				generator.generate(this.extendsClauseTree.extendsToken);
 				this.extendsClauseTree.baseClassExpressionTree.generate(generator);
 			}
-			this.openCurlyToken.generate(generator);
+			generator.generate(this.openCurlyToken);
 			for(const memberTree of this.memberTrees)
 				memberTree.generate(generator);
-			this.closeCurlyToken.generate(generator);
+			generator.generate(this.closeCurlyToken);
 		}
 
 		resolveDeclaration(name) { return this.scope.resolveDeclaration(name); }
@@ -208,7 +208,7 @@ function defineJavascriptTrees(Compiler) {
 		generate(generator) {
 			if(this.labelsTree!==undefined)
 				this.labelsTree.generate(generator);
-			this.semicolonToken.generate(generator);
+			generator.generate(this.semicolonToken);
 		}
 
 	});
@@ -243,9 +243,9 @@ function defineJavascriptTrees(Compiler) {
 
 		generate(generator) {
 			this.operandTree.generate(generator);
-			this.openSquareToken.generate(generator);
+			generator.generate(this.openSquareToken);
 			this.indexTree.generate(generator);
-			this.closeSquareToken.generate(generator);
+			generator.generate(this.closeSquareToken);
 		}
 
 	}),
@@ -276,10 +276,10 @@ function defineJavascriptTrees(Compiler) {
 		}
 
 		generate(generator) {
-			this.openSquareToken.generate(generator);
+			generator.generate(this.openSquareToken);
 			if(this.initializersTree!==undefined)
 				this.initializersTree.generate(generator);
-			this.closeSquareToken.generate(generator);
+			generator.generate(this.closeSquareToken);
 		}
 
 	});
@@ -311,7 +311,7 @@ function defineJavascriptTrees(Compiler) {
 
 		generate(generator) {
 			this.leftOperandTree.generate(generator);
-			this.operatorToken.generate(generator);
+			generator.generate(this.operatorToken);
 			this.rightOperandTree.generate(generator);
 		}
 
@@ -386,8 +386,11 @@ function defineJavascriptTrees(Compiler) {
 
 		generate(generator) {
 			this.leftOperandTree.generate(generator);
-			this.operatorToken.generate(generator);
-			this.rightOperandTree.generate(generator);
+			generator.generate(this.operatorToken);
+			if(this.operatorToken.text==="&&"||this.operatorToken.text==="||")
+				generator.probeExpression(this.rightOperandTree);
+			else
+				this.rightOperandTree.generate(generator);
 		}
 
 	});
@@ -422,10 +425,10 @@ function defineJavascriptTrees(Compiler) {
 
 		generate(generator) {
 			this.operandTree.generate(generator);
-			this.openParenthesisToken.generate(generator);
+			generator.generate(this.openParenthesisToken);
 			if(this.argumentsTree!==undefined)
 				this.argumentsTree.generate(generator);
-			this.closeParenthesisToken.generate(generator);
+			generator.generate(this.closeParenthesisToken);
 		}
 
 	});
@@ -456,7 +459,7 @@ function defineJavascriptTrees(Compiler) {
 
 		generate(generator) {
 			this.parametersTree.generate(generator);
-			this.operatorToken.generate(generator);
+			generator.generate(this.operatorToken);
 			this.bodyTree.generate(generator);
 		}
 
@@ -520,7 +523,7 @@ function defineJavascriptTrees(Compiler) {
 
 		resolve(analyzer, parentScope) {}
 
-		generate(generator) { this.token.generate(generator); }
+		generate(generator) { generator.generate(this.token); }
 
 	});
 
@@ -545,8 +548,8 @@ function defineJavascriptTrees(Compiler) {
 
 		generate(generator) {
 			this.operandTree.generate(generator);
-			this.dotToken.generate(generator);
-			this.nameToken.generate(generator);
+			generator.generate(this.dotToken);
+			generator.generate(this.nameToken);
 		}
 
 	});
@@ -578,10 +581,10 @@ function defineJavascriptTrees(Compiler) {
 		}
 
 		generate(generator) {
-			this.openCurlyToken.generate(generator);
+			generator.generate(this.openCurlyToken);
 			for(const memberTree of this.memberTrees)
 				memberTree.generate(generator);
-			this.closeCurlyToken.generate(generator);
+			generator.generate(this.closeCurlyToken);
 		}
 
 	});
@@ -606,9 +609,9 @@ function defineJavascriptTrees(Compiler) {
 		resolve(analyzer, parentScope) { this.operandTree.resolve(analyzer, parentScope); }
 
 		generate(generator) {
-			this.openParenthesisToken.generate(generator);
+			generator.generate(this.openParenthesisToken);
 			this.operandTree.generate(generator);
-			this.closeParenthesisToken.generate(generator);
+			generator.generate(this.closeParenthesisToken);
 		}
 
 	});
@@ -633,7 +636,7 @@ function defineJavascriptTrees(Compiler) {
 
 		generate(generator) {
 			this.operandTree.generate(generator);
-			this.operatorToken.generate(generator);
+			generator.generate(this.operatorToken);
 		}
 
 	});
@@ -657,7 +660,7 @@ function defineJavascriptTrees(Compiler) {
 		resolve(analyzer, parentScope) { this.operandTree.resolve(analyzer, parentScope); }
 
 		generate(generator) {
-			this.operatorToken.generate(generator);
+			generator.generate(this.operatorToken);
 			this.operandTree.generate(generator);
 		}
 
@@ -682,7 +685,7 @@ function defineJavascriptTrees(Compiler) {
 			Object.freeze(this);
 		}
 
-		generate(generator) { this.nameToken.generate(generator); }
+		generate(generator) { generator.generate(this.nameToken); }
 
 	});
 
@@ -716,10 +719,10 @@ function defineJavascriptTrees(Compiler) {
 
 		generate(generator) {
 			this.conditionTree.generate(generator);
-			this.questionToken.generate(generator);
-			this.trueExpressionTree.generate(generator);
-			this.colonToken.generate(generator);
-			this.falseExpressionTree.generate(generator);
+			generator.generate(this.questionToken);
+			generator.probeExpression(this.trueExpressionTree);
+			generator.generate(this.colonToken);
+			generator.probeExpression(this.falseExpressionTree);
 		}
 
 	});
@@ -757,9 +760,9 @@ function defineJavascriptTrees(Compiler) {
 		resolve(analyzer, parentScope) { this.blockTree.resolve(analyzer, this); }
 
 		generate(generator) {
-			this.functionToken.generate(generator);
+			generator.generate(this.functionToken);
 			if(this.nameToken!==undefined)
-				this.nameToken.generate(generator);
+				generator.generate(this.nameToken);
 			this.parametersTree.generate(generator);
 			this.blockTree.generate(generator);
 		}
@@ -835,13 +838,13 @@ function defineJavascriptTrees(Compiler) {
 		}
 
 		generate(generator) {
-			this.openParenthesisToken.generate(generator);
+			generator.generate(this.openParenthesisToken);
 			for(const parameterTree of this.parameterTrees) {
 				if(parameterTree.precedingCommaToken!==undefined)
-					parameterTree.precedingCommaToken.generate(generator);
-				parameterTree.nameToken.generate(generator);
+					generator.generate(parameterTree.precedingCommaToken);
+				generator.generate(parameterTree.nameToken);
 			}
-			this.closeParenthesisToken.generate(generator);
+			generator.generate(this.closeParenthesisToken);
 		}
 
 	});
@@ -852,11 +855,6 @@ function defineJavascriptTrees(Compiler) {
 			this.assignToken=assignToken;
 			this.expressionTree=expressionTree;
 			Object.freeze(this);
-		}
-
-		generate(generator) {
-			this.assignToken.generate(generator);
-			this.expressionTree.generate(generator);
 		}
 
 	});
@@ -897,8 +895,8 @@ function defineJavascriptTrees(Compiler) {
 
 		generate(generator) {
 			for(const labelTree of this.labelTrees) {
-				labelTree.nameToken.generate(generator);
-				labelTree.colonToken.generate(generator);
+				generator.generate(labelTree.nameToken);
+				generator.generate(labelTree.colonToken);
 			}
 		}
 
@@ -925,7 +923,7 @@ function defineJavascriptTrees(Compiler) {
 			return Object.freeze(parameters);
 		}
 
-		generate(generator) { this.nameToken.generate(generator); }
+		generate(generator) { generator.generate(this.nameToken); }
 
 	});
 
@@ -958,8 +956,8 @@ function defineJavascriptTrees(Compiler) {
 			if(this.annotationsTree!==undefined)
 				this.annotationsTree.generate(generator);
 			if(this.staticToken!==undefined)
-				this.staticToken.generate(generator);
-			this.nameToken.generate(generator);
+				generator.generate(this.staticToken);
+			generator.generate(this.nameToken);
 			this.parametersTree.generate(generator);
 			this.blockTree.generate(generator);
 		}
@@ -1034,12 +1032,12 @@ function defineJavascriptTrees(Compiler) {
 
 		generate(generator) {
 			if(this.precedingCommaToken!==undefined)
-				this.precedingCommaToken.generate(generator);
-			this.openSquareToken.generate(generator);
-			this.keyTree.generate(generator);
-			this.closeSquareToken.generate(generator);
-			this.colonToken.generate(generator);
-			this.valueTree.generate(generator);
+				generator.generate(this.precedingCommaToken);
+			generator.generate(this.openSquareToken);
+			generator.probeExpression(this.keyTree);
+			generator.generate(this.closeSquareToken);
+			generator.generate(this.colonToken);
+			generator.probeExpression(this.valueTree);
 		}
 
 	});
@@ -1079,10 +1077,10 @@ function defineJavascriptTrees(Compiler) {
 
 		generate(generator) {
 			if(this.precedingCommaToken!==undefined)
-				this.precedingCommaToken.generate(generator);
-			this.keyToken.generate(generator);
-			this.colonToken.generate(generator);
-			this.valueTree.generate(generator);
+				generator.generate(this.precedingCommaToken);
+			generator.generate(this.keyToken);
+			generator.generate(this.colonToken);
+			generator.probeExpression(this.valueTree);
 		}
 
 	});
@@ -1110,8 +1108,8 @@ function defineJavascriptTrees(Compiler) {
 
 		generate(generator) {
 			if(this.precedingCommaToken!==undefined)
-				this.precedingCommaToken.generate(generator);
-			this.nameToken.generate(generator);
+				generator.generate(this.precedingCommaToken);
+			generator.generate(this.nameToken);
 			this.parametersTree.generate(generator);
 			this.blockTree.generate(generator);
 		}
@@ -1191,7 +1189,7 @@ function defineJavascriptTrees(Compiler) {
 			for(const statementTree of this.statementTrees)
 				statementTree.generate(generator);
 			if(this.endOfInputToken!==undefined)
-				this.endOfInputToken.generate(generator);
+				generator.generate(this.endOfInputToken);
 		}
 
 		resolveBreak(analyzer, breakToken, nameToken) {
@@ -1263,10 +1261,10 @@ function defineJavascriptTrees(Compiler) {
 		generate(generator) {
 			if(this.labelsTree!==undefined)
 				this.labelsTree.generate(generator);
-			this.breakToken.generate(generator);
+			generator.generate(this.breakToken);
 			if(this.labelToken!==undefined)
-				this.labelToken.generate(generator);
-			this.semicolonToken.generate(generator);
+				generator.generate(this.labelToken);
+			generator.generate(this.semicolonToken);
 		}
 
 	});
@@ -1329,10 +1327,10 @@ function defineJavascriptTrees(Compiler) {
 		generate(generator) {
 			if(this.labelsTree!==undefined)
 				this.labelsTree.generate(generator);
-			this.continueToken.generate(generator);
+			generator.generate(this.continueToken);
 			if(this.labelToken!==undefined)
-				this.labelToken.generate(generator);
-			this.semicolonToken.generate(generator);
+				generator.generate(this.labelToken);
+			generator.generate(this.semicolonToken);
 		}
 
 	});
@@ -1393,13 +1391,13 @@ function defineJavascriptTrees(Compiler) {
 		generate(generator) {
 			if(this.labelsTree!==undefined)
 				this.labelsTree.generate(generator);
-			this.doToken.generate(generator);
+			generator.generate(this.doToken);
 			this.statementTree.generate(generator);
-			this.whileToken.generate(generator);
-			this.openParenthesisToken.generate(generator);
-			this.conditionTree.generate(generator);
-			this.closeParenthesisToken.generate(generator);
-			this.semicolonToken.generate(generator);
+			generator.generate(this.whileToken);
+			generator.generate(this.openParenthesisToken);
+			generator.probeCondition(this.conditionTree);
+			generator.generate(this.closeParenthesisToken);
+			generator.generate(this.semicolonToken);
 		}
 
 	});
@@ -1427,8 +1425,8 @@ function defineJavascriptTrees(Compiler) {
 		generate(generator) {
 			if(this.labelsTree!==undefined)
 				this.labelsTree.generate(generator);
-			this.expressionTree.generate(generator);
-			this.semicolonToken.generate(generator);
+			generator.probeExpression(this.expressionTree);
+			generator.generate(this.semicolonToken);
 		}
 
 	});
@@ -1510,15 +1508,15 @@ function defineJavascriptTrees(Compiler) {
 		generate(generator) {
 			if(this.labelsTree!==undefined)
 				this.labelsTree.generate(generator);
-			this.forToken.generate(generator);
-			this.openParenthesisToken.generate(generator);
+			generator.generate(this.forToken);
+			generator.generate(this.openParenthesisToken);
 			this.initializerTree.generate(generator);
 			if(this.conditionTree!==undefined)
-				this.conditionTree.generate(generator);
-			this.semicolonToken.generate(generator);
+				generator.probeCondition(this.conditionTree);
+			generator.generate(this.semicolonToken);
 			if(this.incrementTree!==undefined)
-				this.incrementTree.generate(generator);
-			this.closeParenthesisToken.generate(generator);
+				generator.probeExpression(this.incrementTree);
+			generator.generate(this.closeParenthesisToken);
 			this.statementTree.generate(generator);
 		}
 
@@ -1596,14 +1594,14 @@ function defineJavascriptTrees(Compiler) {
 		generate(generator) {
 			if(this.labelsTree!==undefined)
 				this.labelsTree.generate(generator);
-			this.forToken.generate(generator);
-			this.openParenthesisToken.generate(generator);
+			generator.generate(this.forToken);
+			generator.generate(this.openParenthesisToken);
 			if(this.declarationKeywordToken!==undefined)
-				this.declarationKeywordToken.generate(generator);
-			this.nameToken.generate(generator);
-			this.operatorToken.generate(generator);
-			this.iterableTree.generate(generator);
-			this.closeParenthesisToken.generate(generator);
+				generator.generate(this.declarationKeywordToken);
+			generator.generate(this.nameToken);
+			generator.generate(this.operatorToken);
+			generator.probeExpression(this.iterableTree);
+			generator.generate(this.closeParenthesisToken);
 			this.statementTree.generate(generator);
 		}
 
@@ -1685,13 +1683,13 @@ function defineJavascriptTrees(Compiler) {
 		generate(generator) {
 			if(this.labelsTree!==undefined)
 				this.labelsTree.generate(generator);
-			this.ifToken.generate(generator);
-			this.openParenthesisToken.generate(generator);
-			this.conditionTree.generate(generator);
-			this.closeParenthesisToken.generate(generator);
+			generator.generate(this.ifToken);
+			generator.generate(this.openParenthesisToken);
+			generator.probeCondition(this.conditionTree);
+			generator.generate(this.closeParenthesisToken);
 			this.statementTree.generate(generator);
 			if(this.elseClauseTree!==undefined) {
-				this.elseClauseTree.elseToken.generate(generator);
+				generator.generate(this.elseClauseTree.elseToken);
 				this.elseClauseTree.statementTree.generate(generator);
 			}
 		}
@@ -1740,10 +1738,10 @@ function defineJavascriptTrees(Compiler) {
 		generate(generator) {
 			if(this.labelsTree!==undefined)
 				this.labelsTree.generate(generator);
-			this.returnToken.generate(generator);
+			generator.generate(this.returnToken);
 			if(this.expressionTree!==undefined)
-				this.expressionTree.generate(generator);
-			this.semicolonToken.generate(generator);
+				generator.probeExpression(this.expressionTree);
+			generator.generate(this.semicolonToken);
 		}
 
 	});
@@ -1797,20 +1795,20 @@ function defineJavascriptTrees(Compiler) {
 		generate(generator) {
 			if(this.labelsTree!==undefined)
 				this.labelsTree.generate(generator);
-			this.switchToken.generate(generator);
-			this.openParenthesisToken.generate(generator);
-			this.conditionTree.generate(generator);
-			this.closeParenthesisToken.generate(generator);
-			this.openCurlyToken.generate(generator);
+			generator.generate(this.switchToken);
+			generator.generate(this.openParenthesisToken);
+			generator.probeExpression(this.conditionTree);
+			generator.generate(this.closeParenthesisToken);
+			generator.generate(this.openCurlyToken);
 			for(const caseTree of this.caseTrees) {
-				caseTree.keywordToken.generate(generator);
+				generator.generate(caseTree.keywordToken);
 				if(caseTree.expressionTree!==undefined)
-					caseTree.expressionTree.generate(generator);
-				caseTree.colonToken.generate(generator);
+					generator.probeExpression(caseTree.expressionTree);
+				generator.generate(caseTree.colonToken);
 				for(const statementTree of caseTree.statementTrees)
 					statementTree.generate(generator);
 			}
-			this.closeCurlyToken.generate(generator);
+			generator.generate(this.closeCurlyToken);
 		}
 
 		resolveBreak(analyzer, breakToken, nameToken) {
@@ -1863,9 +1861,9 @@ function defineJavascriptTrees(Compiler) {
 		generate(generator) {
 			if(this.labelsTree!==undefined)
 				this.labelsTree.generate(generator);
-			this.throwToken.generate(generator);
-			this.expressionTree.generate(generator);
-			this.semicolonToken.generate(generator);
+			generator.generate(this.throwToken);
+			generator.probeExpression(this.expressionTree);
+			generator.generate(this.semicolonToken);
 		}
 
 	});
@@ -1903,17 +1901,17 @@ function defineJavascriptTrees(Compiler) {
 		generate(generator) {
 			if(this.labelsTree!==undefined)
 				this.labelsTree.generate(generator);
-			this.tryToken.generate(generator);
+			generator.generate(this.tryToken);
 			this.blockTree.generate(generator);
 			if(this.catchClauseTree!==undefined) {
-				this.catchClauseTree.catchToken.generate(generator);
-				this.catchClauseTree.openParenthesisToken.generate(generator);
-				this.catchClauseTree.nameToken.generate(generator);
-				this.catchClauseTree.closeParenthesisToken.generate(generator);
+				generator.generate(this.catchClauseTree.catchToken);
+				generator.generate(this.catchClauseTree.openParenthesisToken);
+				generator.generate(this.catchClauseTree.nameToken);
+				generator.generate(this.catchClauseTree.closeParenthesisToken);
 				this.catchClauseTree.blockTree.generate(generator);
 			}
 			if(this.finallyClauseTree!==undefined) {
-				this.finallyClauseTree.finallyToken.generate(generator);
+				generator.generate(this.finallyClauseTree.finallyToken);
 				this.finallyClauseTree.blockTree.generate(generator);
 			}
 		}
@@ -1956,10 +1954,10 @@ function defineJavascriptTrees(Compiler) {
 		generate(generator) {
 			if(this.labelsTree!==undefined)
 				this.labelsTree.generate(generator);
-			this.whileToken.generate(generator);
-			this.openParenthesisToken.generate(generator);
-			this.conditionTree.generate(generator);
-			this.closeParenthesisToken.generate(generator);
+			generator.generate(this.whileToken);
+			generator.generate(this.openParenthesisToken);
+			generator.probeCondition(this.conditionTree);
+			generator.generate(this.closeParenthesisToken);
 			this.statementTree.generate(generator);
 		}
 
@@ -1982,6 +1980,101 @@ function defineJavascriptTrees(Compiler) {
 	});
 
 	Object.freeze(Trees.Statement);
+
+	Trees.Token=class Token {
+
+		constructor(source, trivias, line, offset, text, value) {
+			this.source=source;
+			this.trivias=trivias;
+			this.line=line;
+			this.offset=offset;
+			this.text=text;
+			this.value=value;
+		}
+
+	};
+
+	Trees.Token.Character=Object.freeze(class Character extends Trees.Token {
+
+		constructor(source, trivias, line, offset, text, value) {
+			super(source, trivias, line, offset, text, value);
+		}
+
+		kind() { return "character"; }
+
+	});
+
+	Trees.Token.EndOfInput=Object.freeze(class EndOfInput extends Trees.Token {
+
+		constructor(source, trivias, line, offset, text, value) {
+			super(source, trivias, line, offset, text, value);
+		}
+
+		kind() { return "end-of-input"; }
+
+	});
+
+	Trees.Token.Identifier=Object.freeze(class Identifier extends Trees.Token {
+
+		constructor(source, trivias, line, offset, text, value) {
+			super(source, trivias, line, offset, text, value);
+		}
+
+		kind() { return "identifier"; }
+
+	});
+
+	Trees.Token.Keyword=Object.freeze(class Keyword extends Trees.Token {
+
+		constructor(source, trivias, line, offset, text, value) {
+			super(source, trivias, line, offset, text, value);
+		}
+
+		kind() { return "keyword"; }
+
+	});
+
+	Trees.Token.Number=Object.freeze(class Number extends Trees.Token {
+
+		constructor(source, trivias, line, offset, text, value) {
+			super(source, trivias, line, offset, text, value);
+		}
+
+		kind() { return "number"; }
+
+	});
+
+	Trees.Token.Punctuator=Object.freeze(class Punctuator extends Trees.Token {
+
+		constructor(source, trivias, line, offset, text, value) {
+			super(source, trivias, line, offset, text, value);
+		}
+
+		kind() { return "punctuator"; }
+
+	});
+
+	Trees.Token.Regex=Object.freeze(class Regex extends Trees.Token  {
+
+		constructor(source, trivias, line, offset, text, value) {
+			super(source, trivias, line, offset, text, value);
+		}
+
+		kind() { return "regex"; }
+
+	});
+
+	Trees.Token.String=Object.freeze(class String extends Trees.Token  {
+
+		constructor(source, trivias, line, offset, text, value) {
+			super(source, trivias, line, offset, text, value);
+		}
+
+		kind() { return "string"; }
+
+	});
+
+	Object.freeze(Trees.Token);
 
 	Trees.Type=Object.freeze(class Type {
 
@@ -2041,15 +2134,17 @@ function defineJavascriptTrees(Compiler) {
 					generator.commentIn();
 				this.annotationsTree.generate(generator);
 			}
-			this.keywordToken.generate(generator);
+			generator.generate(this.keywordToken);
 			for(const declaratorTree of this.declaratorTrees) {
 				if(declaratorTree.precedingCommaToken!==undefined)
-					declaratorTree.precedingCommaToken.generate(generator);
-				declaratorTree.nameToken.generate(generator);
-				if(declaratorTree.initializerTree!==undefined)
-					declaratorTree.initializerTree.generate(generator);
+					generator.generate(declaratorTree.precedingCommaToken);
+				generator.generate(declaratorTree.nameToken);
+				if(declaratorTree.initializerTree!==undefined) {
+					generator.generate(declaratorTree.initializerTree.assignToken);
+					generator.probeExpression(declaratorTree.initializerTree.expressionTree)
+				}
 			}
-			this.semicolonToken.generate(generator);
+			generator.generate(this.semicolonToken);
 			if(comment)
 				generator.commentOut();
 		}

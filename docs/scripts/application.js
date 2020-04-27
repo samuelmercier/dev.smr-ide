@@ -13,6 +13,7 @@ const System=defineSystem(function () {
 		+"@native var console;\n"
 		+"@native var performance;\n"
 		+"@native var undefined;\n"
+		+"@native var Date;\n"
 		+"@native var window;\n\n"
 		+"const octopus=function() {\n\n"
 		+"	const initializers=new Map();\n"
@@ -289,7 +290,8 @@ function newWorkbench(project) {
 			items:[
 				{ text:"Delete", onclick:function() { popup.close(), openDeleteDialog("Delete test case '"+test.name()+"' ?", test); } },
 				{ text:"Rename", onclick:function() { popup.close(), openRenameDialog("Rename test case '"+test.name()+"'", test); } },
-				{ text:"Run", onclick:function() { popup.close(), testJavascript([ test ]); } }
+				{ text:"Run", onclick:function() { popup.close(), testJavascript([ test ]); } },
+				{ text:"Run Coverage", onclick:function() { popup.close(), Coverage.run(project, [ test ]); } },
 			]
 		}).setPosition(event.pageX+"px", event.pageY+"px");
 		return false;
@@ -306,7 +308,8 @@ function newWorkbench(project) {
 						openCreateDialog("Create a new test case", function(descriptor) { return project.createTest(descriptor.name); });
 					}
 				},
-				{ text:"Run all tests", onclick:function() { popup.close(), testJavascript(project.tests()); } }
+				{ text:"Run all tests", onclick:function() { popup.close(), testJavascript(project.tests()); } },
+				{ text:"Run all coverage tests", onclick:function() { popup.close(), Coverage.run(project, Array.from(project.tests())); } }
 			]
 		}).setPosition(event.pageX+"px", event.pageY+"px");
 		return false;

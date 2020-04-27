@@ -16,23 +16,10 @@ const Compiler=function() {
 		};
 	});
 
-	Compiler.newToken=Object.freeze(function(source, trivias, line, offset, text, value) {
-		return Object.freeze({
-			line:line,
-			offset:offset,
-			source:source,
-			text:text,
-			trivias:trivias,
-			value:value,
-
-			generate:function(generator) { generator.generate(this); }
-		});
-	});
-
-	/** generator used to build a source back from a tree. */
-	Compiler.newJavascriptGenerator=Object.freeze(function() {
+	/** generator used to build a coverage source from a tree. */
+	Compiler.newCoverageGenerator=Object.freeze(function(firstProbeIndex) {
 		let commentLevel=0;
-		const probes=new Map();
+		const probes=[];
 		const result=[];
 		return Object.freeze({
 			append:function(text) { return result.push(text), this; },
@@ -65,16 +52,100 @@ const Compiler=function() {
 						this.append(trivia.text);
 				this.append(token.text);
 			},
-			probe:function(expressionTree) {
+			probeCondition:function(expressionTree) {
 				if(commentLevel===0) {
-					this.append("probe(").append(probes.size()).append(", ");
+					const index=firstProbeIndex+probes.length;
+					probes.push({ index:index, tree:expressionTree });
+					this.append(" window[\"##oct##c\"](").append(index).append(", ");
 					expressionTree.generate(this, true);
 					this.append(")");
-					probes.set(expressionTree, probes.size());
 				}
 				else
-					expressionTree.generate(this, false);
-			}
+					expressionTree.generate(this);
+			},
+			probeExpression:function(expressionTree) {
+				if(commentLevel===0) {
+					const index=firstProbeIndex+probes.length;
+					probes.push({ index:index, tree:expressionTree });
+					this.append(" window[\"##oct##e\"](").append(index).append(", ");
+					expressionTree.generate(this, true);
+					this.append(")");
+				}
+				else
+					expressionTree.generate(this);
+			},
+			probes:function() { return probes; }
+		});
+	});
+
+	/** generator used to build a colored html from a tree. */
+	Compiler.newHtmlGenerator=Object.freeze(function(lines) {
+		const element=System.gui.createElement("div");
+		return Object.freeze({
+			append:function(text) { return result.push(text), this; },
+			build:function() { return element; },
+			commentIn:function() { return this; },
+			commentOut:function() { return this; },
+			generate:function(token) {
+				for(const trivia of token.trivias)
+					switch(trivia.kind) {
+					case "comment-1":
+						element.appendChild(document.createTextNode("//"+trivia.text));
+						continue;
+					case "comment-n":
+						element.appendChild(document.createTextNode("/*"+trivia.text+"*/"));
+						continue;
+					default:
+						element.appendChild(document.createTextNode(trivia.text));
+					}
+				const span=System.gui.createElement("span", token.kind(), undefined, document.createTextNode(token.text));
+				const coverage=lines.getCoverageFor(token.line);
+				if(coverage!==undefined)
+					span.setAttribute("coverage", coverage);
+				element.appendChild(span);
+			},
+			probeCondition:function(expressionTree) { expressionTree.generate(this); },
+			probeExpression:function(expressionTree) { expressionTree.generate(this); }
+		});
+	});
+
+	/** generator used to build a coverage source from a tree. */
+	Compiler.newJavascriptGenerator=Object.freeze(function() {
+		let commentLevel=0;
+		const result=[];
+		return Object.freeze({
+			append:function(text) { return result.push(text), this; },
+			build:function() { return result.join(""); },
+			commentIn:function() {
+				if(commentLevel===0)
+					this.append("/* ");
+				return commentLevel+=1, this;
+			},
+			commentOut:function() {
+				if(commentLevel===1)
+					this.append(" */");
+				return commentLevel-=1, this;
+			},
+			generate:function(token) {
+				if(commentLevel===0)
+					for(const trivia of token.trivias)
+						switch(trivia.kind) {
+						case "comment-1":
+							this.append("//").append(trivia.text);
+							continue;
+						case "comment-n":
+							this.append("/*").append(trivia.text).append("*/");
+							continue;
+						default:
+							this.append(trivia.text);
+						}
+				else
+					for(const trivia of token.trivias)
+						this.append(trivia.text);
+				this.append(token.text);
+			},
+			probeCondition:function(expressionTree) { expressionTree.generate(this); },
+			probeExpression:function(expressionTree) { expressionTree.generate(this); }
 		});
 	});
 

@@ -26,6 +26,62 @@ body {
 .UIConsole > .entry > .stack {}
 .UIConsole > .entry > .stack-link { text-decoration: underline; }
 
+.UICoverage {
+	box-sizing: border-box;
+	height: 100%;
+	padding-left: 320px;
+	position: relative;
+	width: 100%;
+}
+.UICoverage > .left {
+	height: 100%;
+	left: 0;
+	position: absolute;
+	width: 320px;
+}
+.UICoverage > .right {
+	box-sizing: border-box;
+	height: 100%;
+	padding-left: 0.4em;
+	position: relative;
+	width: 100%;
+}
+.UICoverage > .right > .resize {
+	background: #404040;
+	cursor: ew-resize;
+	height: 100%;
+	left: 0;
+	position: absolute;
+	top: 0;
+	width: 0.4em;
+}
+.UICoverage > .right > .container {
+	box-sizing: border-box;
+	height: 100%;
+	overflow: hidden;
+	width: 100%;
+}
+
+.UISource {
+	font-family: monospace;
+	height: 100%;
+	overflow: auto;
+	white-space: pre;
+	width: 100%;
+}
+.UISource > span[coverage="total"] { background: green; }
+.UISource > span[coverage="partial"] { background: yellow; }
+.UISource > span[coverage="none"] { background: red; }
+.UISource > .keyword {
+	color: crimson;
+	font-weight: bold;
+}
+.UISource > .punctuator {
+}
+.UISource > .identifier {
+}
+
+
 .UIWorkbench {
 	box-sizing: border-box;
 	height: 100%;
