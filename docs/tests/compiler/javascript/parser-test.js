@@ -132,8 +132,20 @@
 		Assertions.assertUndefined(parseSingleExpression("class", "class MyClass {}").classTree.extendsClauseTree);
 	});
 
+	Tests.run(function testParseExpressionClassMethod() {
+		const tree=parseSingleExpression("class", "class MyClass { method(@optional a, b) {} }");
+		Assertions.assertEqual(tree.classTree.memberTrees[0].parametersTree.getMinParameterCount(), 1);
+		Assertions.assertEqual(tree.classTree.memberTrees[0].parametersTree.getMaxParameterCount(), 2);
+	});
+
+	Tests.run(function testParseExpressionClassMethodVariadic() {
+		const tree=parseSingleExpression("class", "class MyClass { method(...) {} }");
+		Assertions.assertEqual(tree.classTree.memberTrees[0].parametersTree.getMinParameterCount(), 0);
+		Assertions.assertUndefined(tree.classTree.memberTrees[0].parametersTree.getMaxParameterCount());
+	});
+
 	Tests.run(function testParseExpressionFunction() {
-		const tree=parseSingleExpression("function", "function f(a, b) { }");
+		const tree=parseSingleExpression("function", "function f(@optional a, b) { }");
 
 		Assertions.assertEqual(tree.firstToken(), tree.functionTree.functionToken);
 		Assertions.assertEqual(tree.lastToken(), tree.functionTree.blockTree.closeCurlyToken);
@@ -146,9 +158,25 @@
 		assertIdentifier(tree.functionTree.parametersTree.parameterTrees[0].nameToken, "a");
 		assertPunctuator(tree.functionTree.parametersTree.parameterTrees[1].precedingCommaToken, ",");
 		assertIdentifier(tree.functionTree.parametersTree.parameterTrees[1].nameToken, "b");
+		Assertions.assertUndefined(tree.functionTree.parametersTree.variadicToken);
 		assertPunctuator(tree.functionTree.parametersTree.closeParenthesisToken, ")");
 		Assertions.assertEqual(tree.functionTree.blockTree.kind(), "block");
 
+		Assertions.assertEqual(tree.functionTree.parametersTree.getMinParameterCount(), 1);
+		Assertions.assertEqual(tree.functionTree.parametersTree.getMaxParameterCount(), 2);
+	});
+
+	Tests.run(function testParseExpressionFunctionVariadic() {
+		const tree=parseSingleExpression("function", "function f(...) {}").functionTree;
+		Assertions.assertEqual(tree.parametersTree.parameterTrees.length, 0);
+		Assertions.assertUndefined(tree.parametersTree.variadicTree.precedincCommaToken);
+		assertPunctuator(tree.parametersTree.variadicTree.variadicToken, "...");
+
+		Assertions.assertEqual(tree.parametersTree.getMinParameterCount(), 0);
+		Assertions.assertUndefined(tree.parametersTree.getMaxParameterCount());
+	});
+
+	Tests.run(function testParseExpressionFunctionWithoutName() {
 		Assertions.assertUndefined(parseSingleExpression("function", "function() {}").functionTree.nameToken);
 	});
 
@@ -166,44 +194,55 @@
 		Assertions.assertUndefined(parseSingleExpression("invocation", "expression()").argumentsTree);
 	});
 
-	Tests.run(function testParseExpressionLambda() {
-		const tree1=parseSingleExpression("lambda-function", "_=>{}");
+	Tests.run(function testParseExpressionLambdaSingleParameter() {
+		const tree=parseSingleExpression("lambda-function", "_=>{}");
 
-		Assertions.assertEqual(tree1.firstToken(), tree1.parametersTree.nameToken);
-		Assertions.assertEqual(tree1.lastToken(), tree1.bodyTree.closeCurlyToken);
+		Assertions.assertEqual(tree.firstToken(), tree.parametersTree.nameToken);
+		Assertions.assertEqual(tree.lastToken(), tree.bodyTree.closeCurlyToken);
 
-		Assertions.assertEqual(tree1.parametersTree.kind(), "lambda-parameter");
-		assertIdentifier(tree1.parametersTree.nameToken, "_");
-		assertPunctuator(tree1.operatorToken, "=>");
-		Assertions.assertEqual(tree1.bodyTree.kind(), "block");
+		Assertions.assertEqual(tree.parametersTree.kind(), "lambda-parameter");
+		assertIdentifier(tree.parametersTree.nameToken, "_");
+		assertPunctuator(tree.operatorToken, "=>");
+		Assertions.assertEqual(tree.bodyTree.kind(), "block");
 
+		Assertions.assertEqual(tree.parametersTree.getMinParameterCount(), 1);
+		Assertions.assertEqual(tree.parametersTree.getMaxParameterCount(), 1);
+	});
 
-		const tree2=parseSingleExpression("lambda-function", "()=>expression");
+	Tests.run(function testParseExpressionLambdaWithoutParameters() {
+		const tree=parseSingleExpression("lambda-function", "()=>expression");
 
-		Assertions.assertEqual(tree2.firstToken(), tree2.parametersTree.openParenthesisToken);
-		Assertions.assertEqual(tree2.lastToken(), tree2.bodyTree.nameToken);
+		Assertions.assertEqual(tree.firstToken(), tree.parametersTree.openParenthesisToken);
+		Assertions.assertEqual(tree.lastToken(), tree.bodyTree.nameToken);
 
-		Assertions.assertEqual(tree2.parametersTree.kind(), "function-parameters");
-		assertPunctuator(tree2.parametersTree.openParenthesisToken, "(");
-		Assertions.assertEqual(tree2.parametersTree.parameterTrees.length, 0);
-		assertPunctuator(tree2.parametersTree.closeParenthesisToken, ")");
+		Assertions.assertEqual(tree.parametersTree.kind(), "function-parameters");
+		assertPunctuator(tree.parametersTree.openParenthesisToken, "(");
+		Assertions.assertEqual(tree.parametersTree.parameterTrees.length, 0);
+		assertPunctuator(tree.parametersTree.closeParenthesisToken, ")");
 
+		Assertions.assertEqual(tree.parametersTree.getMinParameterCount(), 0);
+		Assertions.assertEqual(tree.parametersTree.getMaxParameterCount(), 0);
+	});
 
-		const tree3=parseSingleExpression("lambda-function", "(a, b)=>expression");
+	Tests.run(function testParseExpressionLambdaWithParameters() {
+		const tree=parseSingleExpression("lambda-function", "(a, b)=>expression");
 
-		Assertions.assertEqual(tree3.firstToken(), tree3.parametersTree.openParenthesisToken);
-		Assertions.assertEqual(tree3.lastToken(), tree3.bodyTree.nameToken);
+		Assertions.assertEqual(tree.firstToken(), tree.parametersTree.openParenthesisToken);
+		Assertions.assertEqual(tree.lastToken(), tree.bodyTree.nameToken);
 
-		Assertions.assertEqual(tree3.parametersTree.kind(), "function-parameters");
-		assertPunctuator(tree3.parametersTree.openParenthesisToken, "(");
-		Assertions.assertEqual(tree3.parametersTree.parameterTrees.length, 2);
-		assertPunctuator(tree3.parametersTree.closeParenthesisToken, ")");
+		Assertions.assertEqual(tree.parametersTree.kind(), "function-parameters");
+		assertPunctuator(tree.parametersTree.openParenthesisToken, "(");
+		Assertions.assertEqual(tree.parametersTree.parameterTrees.length, 2);
+		assertPunctuator(tree.parametersTree.closeParenthesisToken, ")");
 
-		Assertions.assertUndefined(tree3.parametersTree.parameterTrees[0].precedingCommaToken);
-		assertIdentifier(tree3.parametersTree.parameterTrees[0].nameToken, "a");
+		Assertions.assertUndefined(tree.parametersTree.parameterTrees[0].precedingCommaToken);
+		assertIdentifier(tree.parametersTree.parameterTrees[0].nameToken, "a");
 
-		assertPunctuator(tree3.parametersTree.parameterTrees[1].precedingCommaToken, ",");
-		assertIdentifier(tree3.parametersTree.parameterTrees[1].nameToken, "b");
+		assertPunctuator(tree.parametersTree.parameterTrees[1].precedingCommaToken, ",");
+		assertIdentifier(tree.parametersTree.parameterTrees[1].nameToken, "b");
+
+		Assertions.assertEqual(tree.parametersTree.getMinParameterCount(), 2);
+		Assertions.assertEqual(tree.parametersTree.getMaxParameterCount(), 2);
 	});
 
 	Tests.run(function testParseExpressionLiteral() {
@@ -540,6 +579,18 @@
 		assertPunctuator(tree.functionTree.parametersTree.parameterTrees[1].precedingCommaToken, ",");
 		assertIdentifier(tree.functionTree.parametersTree.parameterTrees[1].nameToken, "b");
 		assertPunctuator(tree.functionTree.parametersTree.closeParenthesisToken, ")");
+
+		Assertions.assertEqual(tree.functionTree.parametersTree.getMinParameterCount(), 2);
+		Assertions.assertEqual(tree.functionTree.parametersTree.getMaxParameterCount(), 2);
+	});
+
+	Tests.run(function testParseStatementFunctionVariadic() {
+		const tree=parseSingleStatement("function", "function f(...) {}").functionTree;
+		Assertions.assertUndefined(tree.parametersTree.variadicTree.precedincCommaToken);
+		assertPunctuator(tree.parametersTree.variadicTree.variadicToken, "...");
+
+		Assertions.assertEqual(tree.parametersTree.getMinParameterCount(), 0);
+		Assertions.assertUndefined(tree.parametersTree.getMaxParameterCount());
 	});
 
 	Tests.run(function testParseStatementIf() {

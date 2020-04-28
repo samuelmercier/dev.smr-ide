@@ -1512,3 +1512,179 @@
 	});
 
 })();
+
+(function testAnalyzeExpression() {
+
+	function parseSingleStatementWithDiagnostics(input) {
+		const result=Compiler.parseJavascript("sourceId", input);
+		Assertions.assertEqual(result.statementTrees.length, 1);
+		return assertDiagnostics(result);
+	}
+
+	Tests.run(function testAssign() {
+		// FIXME: add array-access
+
+		// FIXME: array literal
+
+		// FIXME: better test
+		parseSingleStatementWithDiagnostics("{ var a; a=a=0; }")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("{ var a; (a=a)=0; }")
+			.assertDiagnostic(14, 15, "left operand is not assignable")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("(class {})=0;")
+			.assertDiagnostic(10, 11, "left operand is not assignable")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("(function() {})=0;")
+			.assertDiagnostic(15, 16, "left operand is not assignable")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("(1+1)=0;")
+			.assertDiagnostic(5, 6, "left operand is not assignable")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("(function() {})=0;")
+			.assertDiagnostic(15, 16, "left operand is not assignable")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("(_=>undefined)=0;")
+			.assertDiagnostic(14, 15, "left operand is not assignable")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("(()=>undefined)=0;")
+			.assertDiagnostic(15, 16, "left operand is not assignable")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("0=0;")
+			.assertDiagnostic(1, 2, "left operand is not assignable")
+			.assertNoMoreDiagnostic();
+
+		// FIXME: add member-access
+
+		parseSingleStatementWithDiagnostics("{ var a; a++=0; }")
+			.assertDiagnostic(12, 13, "left operand is not assignable")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ var a; ++a=0; }")
+			.assertDiagnostic(12, 13, "left operand is not assignable")
+			.assertNoMoreDiagnostic();
+
+		// FIXME: add scope-access
+
+		// FIXME: add ternary
+	});
+
+	Tests.run(function testInvocation() {
+		// FIXME: add array-access
+
+		parseSingleStatementWithDiagnostics("[]();")
+			.assertDiagnostic(2, 3, "cannot invoke operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ var a; (a=function() {})(0); }")
+			.assertDiagnostic(26, 27, "expected at most 0 argument(s); got 1")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("{ var a; (a=[])(); }")
+			.assertDiagnostic(15, 16, "cannot invoke operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("(class {})();")
+			.assertDiagnostic(10, 11, "cannot invoke operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("(function() {})(0);")
+			.assertDiagnostic(15, 16, "expected at most 0 argument(s); got 1")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("(function(a) {})(0);")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("(function(a, ...) {})();")
+			.assertDiagnostic(21, 22, "expected at least 1 argument(s); got 0")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("(1+1)();")
+			.assertDiagnostic(5, 6, "cannot invoke operand")
+			.assertNoMoreDiagnostic();
+
+		// FIXME: add invocation
+
+		parseSingleStatementWithDiagnostics("(_=>undefined)();")
+			.assertDiagnostic(14, 15, "expected at least 1 argument(s); got 0")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("(()=>undefined)(0);")
+			.assertDiagnostic(15, 16, "expected at most 0 argument(s); got 1")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("((a)=>undefined)(0);")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("((a)=>undefined)();")
+			.assertDiagnostic(16, 17, "expected at least 1 argument(s); got 0")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("0();")
+			.assertDiagnostic(1, 2, "cannot invoke operand")
+			.assertNoMoreDiagnostic();
+
+		// FIXME: add member-access
+
+		parseSingleStatementWithDiagnostics("a++();")
+			.assertDiagnostic(3, 4, "cannot invoke operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("(++a)();")
+			.assertDiagnostic(5, 6, "cannot invoke operand")
+			.assertNoMoreDiagnostic();
+
+		// FIXME: add scope-access
+
+		// FIXME: add ternary
+	});
+
+	Tests.run(function testPostfix() {
+		// FIXME: add array-access
+
+		// FIXME: add array-literal
+
+		parseSingleStatementWithDiagnostics("{ var a; (a=a)++; }")
+			.assertDiagnostic(14, 16, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("(class {})++;")
+			.assertDiagnostic(10, 12, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("(function() {})++;")
+			.assertDiagnostic(15, 17, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("(1+1)++;")
+			.assertDiagnostic(5, 7, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("(function() {})++;")
+			.assertDiagnostic(15, 17, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("(_=>undefined)++;")
+			.assertDiagnostic(14, 16, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("0++;")
+			.assertDiagnostic(1, 3, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		// FIXME: add member-access
+
+		parseSingleStatementWithDiagnostics("{ var a; a++++; }")
+			.assertDiagnostic(12, 14, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ var a; (++a)++; }")
+			.assertDiagnostic(14, 16, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		// FIXME: add scope-access
+
+		// FIXME: add ternary
+	});
+
+})();

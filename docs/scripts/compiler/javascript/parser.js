@@ -426,6 +426,13 @@ function defineJavascriptParser(Compiler) {
 
 		/* *** parser part. *** */
 
+		function parseAnnotations() {
+			const annotationTrees=[];
+			for(let atToken; (atToken=checkPunctuator("@"))!==undefined; )
+				annotationTrees.push(new Compiler.JavascriptTrees.Annotation(atToken, expectIdentifier()));
+			return Object.freeze(annotationTrees);
+		}
+
 		function parseBlock(labelTrees, openCurlyToken) {
 			const statementTrees=[];
 			let closeCurlyToken;
@@ -442,9 +449,7 @@ function defineJavascriptParser(Compiler) {
 		function parseClassMembers() {
 			const memberTrees=[];
 			while(true) {
-				const annotationTrees=[];
-				for(let atToken; (atToken=checkPunctuator("@"))!==undefined; )
-					annotationTrees.push(new Compiler.JavascriptTrees.Annotation(atToken, expectIdentifier()));
+				const annotationTrees=parseAnnotations();
 				const annotationsTree=annotationTrees.length!==0 ? new Compiler.JavascriptTrees.Annotations(annotationTrees) : undefined;
 				const staticToken=checkKeyword("static");
 				let keywordToken=checkKeywords(memberNameKeywords);
@@ -690,7 +695,7 @@ function defineJavascriptParser(Compiler) {
 			let closeParenthesisToken;
 			if((closeParenthesisToken=checkPunctuator(")"))!==undefined)
 				return new Compiler.JavascriptTrees.Expression.Lambda(
-					new Compiler.JavascriptTrees.FunctionParameters(token, [], closeParenthesisToken),
+					new Compiler.JavascriptTrees.FunctionParameters(token, [], undefined, closeParenthesisToken),
 					expectOperator("=>"),
 					parseExpressionLambdaBody()
 				);
@@ -699,7 +704,7 @@ function defineJavascriptParser(Compiler) {
 			const arrowToken=checkOperator("=>");
 			return arrowToken!==undefined
 				? new Compiler.JavascriptTrees.Expression.Lambda(
-					new Compiler.JavascriptTrees.FunctionParameters(token, parseExpressionLambdaParameters(expressionTree, arrowToken), closeParenthesisToken),
+					new Compiler.JavascriptTrees.FunctionParameters(token, parseExpressionLambdaParameters(expressionTree, arrowToken), undefined, closeParenthesisToken),
 					arrowToken,
 					parseExpressionLambdaBody()
 				)
@@ -790,18 +795,29 @@ function defineJavascriptParser(Compiler) {
 
 		function parseFunctionParameters(openParenthesisToken) {
 			const parameterTrees=[];
+			let variadicTree=undefined;
 			let closeParenthesisToken=checkPunctuator(")");
 			if(closeParenthesisToken===undefined) {
 				let precedingCommaToken=undefined;
-				do
+				do {
+					const variadicToken=checkPunctuator("...");
+					if(variadicToken!==undefined) {
+						variadicTree={
+							precedingCommaToken:precedingCommaToken,
+							variadicToken:variadicToken,
+							typeTree:parseType()
+						};
+						break;
+					}
 					parameterTrees.push({
+						annotationTrees:parseAnnotations(),
 						precedingCommaToken:precedingCommaToken,
 						nameToken:expectIdentifier()
 					});
-				while((precedingCommaToken=checkPunctuator(","))!==undefined);
+				} while((precedingCommaToken=checkPunctuator(","))!==undefined);
 				closeParenthesisToken=expectPunctuator(")");
 			}
-			return new Compiler.JavascriptTrees.FunctionParameters(openParenthesisToken, parameterTrees, closeParenthesisToken);
+			return new Compiler.JavascriptTrees.FunctionParameters(openParenthesisToken, parameterTrees, variadicTree, closeParenthesisToken);
 		}
 
 		function parseStatement() {
@@ -967,9 +983,7 @@ function defineJavascriptParser(Compiler) {
 		}
 
 		function parseStatementOrDeclaration() {
-			const annotationTrees=[];
-			for(let atToken; (atToken=checkPunctuator("@"))!==undefined; )
-				annotationTrees.push(new Compiler.JavascriptTrees.Annotation(atToken, expectIdentifier()));
+			const annotationTrees=parseAnnotations();
 			const annotationsTree=annotationTrees.length!==0 ? new Compiler.JavascriptTrees.Annotations(annotationTrees) : undefined;
 			const token=checkKeywords(classConstFunctionLetOrVarKeywords);
 			if(token!==undefined)

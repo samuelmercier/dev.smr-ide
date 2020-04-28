@@ -31,7 +31,7 @@
 	});
 
 	Tests.run(function testGenerateExpression() {
-		assertGeneratorOutput(" 1 = 1; ");
+		assertGeneratorOutput(" a = 1; ");
 
 		assertGeneratorOutput(" (function f() {}); ");
 		assertGeneratorOutput(" (function f(a) {}); ");

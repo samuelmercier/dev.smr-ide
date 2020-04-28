@@ -2,6 +2,14 @@
 
 function defineJavascriptTrees(Compiler) {
 
+	function isParameterTreeOptional(parameterTree) {
+		if(parameterTree.annotationTrees!==undefined)
+			for(const annotationTree of parameterTree.annotationTrees)
+			if(annotationTree.nameToken.text==="optional")
+				return true;
+		return false;
+	}
+
 	const Trees={};
 
 	Trees.Annotation=Object.freeze(class Annotation {
@@ -213,11 +221,20 @@ function defineJavascriptTrees(Compiler) {
 
 	});
 
-	Trees.Expression={};
+	Trees.Expression=class Expression {
 
-	Trees.Expression.ArrayAccess=Object.freeze(class ArrayAccessExpression {
+		/* *** semantic part. *** */
+
+		isAssignable() { return undefined; }
+
+		isFunction() { return undefined; }
+
+	};
+
+	Trees.Expression.ArrayAccess=Object.freeze(class ArrayAccessExpression extends Trees.Expression {
 
 		constructor(operandTree, openSquareToken, indexTree, closeSquareToken) {
+			super();
 			this.operandTree=operandTree;
 			this.openSquareToken=openSquareToken;
 			this.indexTree=indexTree;
@@ -250,9 +267,10 @@ function defineJavascriptTrees(Compiler) {
 
 	}),
 
-	Trees.Expression.ArrayLiteral=Object.freeze(class ArrayLiteralExpression {
+	Trees.Expression.ArrayLiteral=Object.freeze(class ArrayLiteralExpression extends Trees.Expression {
 
 		constructor(openSquareToken, initializersTree, closeSquareToken) {
+			super();
 			this.openSquareToken=openSquareToken;
 			this.initializersTree=initializersTree;
 			this.closeSquareToken=closeSquareToken;
@@ -273,6 +291,7 @@ function defineJavascriptTrees(Compiler) {
 		resolve(analyzer, parentScope) {
 			if(this.initializersTree!==undefined)
 				this.initializersTree.resolve(analyzer, parentScope);
+			return this;
 		}
 
 		generate(generator) {
@@ -282,15 +301,19 @@ function defineJavascriptTrees(Compiler) {
 			generator.generate(this.closeSquareToken);
 		}
 
+		/* *** semantic part. *** */
+
+		isFunction() { return false; }
+
 	});
 
-	Trees.Expression.Assign=Object.freeze(class AssignExpression {
+	Trees.Expression.Assign=Object.freeze(class AssignExpression extends Trees.Expression {
 
 		constructor(leftOperandTree, operatorToken, rightOperandTree) {
+			super();
 			this.leftOperandTree=leftOperandTree;
 			this.operatorToken=operatorToken;
 			this.rightOperandTree=rightOperandTree;
-			Object.freeze(this);
 		}
 
 		kind() { return "assign"; }
@@ -305,8 +328,12 @@ function defineJavascriptTrees(Compiler) {
 		}
 
 		resolve(analyzer, parentScope) {
-			this.leftOperandTree.resolve(analyzer, parentScope);
-			this.rightOperandTree.resolve(analyzer, parentScope);
+			this.leftOperand=this.leftOperandTree.resolve(analyzer, parentScope);
+			this.rightOperand=this.rightOperandTree.resolve(analyzer, parentScope);
+			if(this.leftOperand!==undefined&&this.leftOperand.isAssignable()===false)
+				analyzer.newDiagnostic(this.operatorToken, "left operand is not assignable");
+			Object.freeze(this);
+			return this;
 		}
 
 		generate(generator) {
@@ -315,11 +342,20 @@ function defineJavascriptTrees(Compiler) {
 			this.rightOperandTree.generate(generator);
 		}
 
+		/* *** semantic part. *** */
+
+		isAssignable() { return false; }
+
+		getFunction() { return this.rightOperand.getFunction(); }
+
+		isFunction() { return this.rightOperand.isFunction(); }
+
 	});
 
-	Trees.Expression.Class=Object.freeze(class ClassExpression {
+	Trees.Expression.Class=Object.freeze(class ClassExpression extends Trees.Expression {
 
 		constructor(classToken, nameToken, extendsClauseTree, openCurlyToken, memberTrees, closeCurlyToken) {
+			super();
 			this.classTree=new Trees.Class(classToken, nameToken, extendsClauseTree, openCurlyToken, memberTrees, closeCurlyToken);
 			Object.freeze(this);
 		}
@@ -332,15 +368,25 @@ function defineJavascriptTrees(Compiler) {
 
 		buildScope(analyzer, parentScope) { this.classTree.buildScope(analyzer, parentScope); }
 
-		resolve(analyzer, parentScope) { this.classTree.resolve(analyzer, parentScope); }
+		resolve(analyzer, parentScope) {
+			this.classTree.resolve(analyzer, parentScope);
+			return this;
+		}
 
 		generate(generator) { this.classTree.generate(generator); }
 
+		/* *** semantic part. *** */
+
+		isAssignable() { return false; }
+
+		isFunction() { return false; }
+
 	});
 
-	Trees.Expression.Function=Object.freeze(class FunctionExpression {
+	Trees.Expression.Function=Object.freeze(class FunctionExpression extends Trees.Expression {
 
 		constructor(functionToken, nameToken, parametersTree, blockTree) {
+			super();
 			this.functionTree=new Trees.Function(functionToken, nameToken, parametersTree, blockTree);
 			Object.freeze(this);
 		}
@@ -353,15 +399,27 @@ function defineJavascriptTrees(Compiler) {
 
 		buildScope(analyzer, parentScope) { this.functionTree.buildScope(analyzer, parentScope); }
 
-		resolve(analyzer, parentScope) { this.functionTree.resolve(analyzer, parentScope); }
+		resolve(analyzer, parentScope) {
+			this.functionTree.resolve(analyzer, parentScope);
+			return this;
+		}
 
 		generate(generator) { this.functionTree.generate(generator); }
 
+		/* *** semantic part. *** */
+
+		isAssignable() { return false; }
+
+		getFunction() { return this.functionTree; }
+
+		isFunction() { return true; }
+
 	});
 
-	Trees.Expression.Infix=Object.freeze(class InfixExpression {
+	Trees.Expression.Infix=Object.freeze(class InfixExpression extends Trees.Expression {
 
 		constructor(leftOperandTree, operatorToken, rightOperandTree) {
+			super();
 			this.leftOperandTree=leftOperandTree;
 			this.operatorToken=operatorToken;
 			this.rightOperandTree=rightOperandTree;
@@ -382,6 +440,7 @@ function defineJavascriptTrees(Compiler) {
 		resolve(analyzer, parentScope) {
 			this.leftOperandTree.resolve(analyzer, parentScope);
 			this.rightOperandTree.resolve(analyzer, parentScope);
+			return this;
 		}
 
 		generate(generator) {
@@ -393,16 +452,22 @@ function defineJavascriptTrees(Compiler) {
 				this.rightOperandTree.generate(generator);
 		}
 
+		/* *** semantic part. *** */
+
+		isAssignable() { return false; }
+
+		isFunction() { return false; }
+
 	});
 
-	Trees.Expression.Invocation=Object.freeze(class InvocationExpression {
+	Trees.Expression.Invocation=Object.freeze(class InvocationExpression extends Trees.Expression {
 
 		constructor(operandTree, openParenthesisToken, argumentsTree, closeParenthesisToken) {
+			super();
 			this.operandTree=operandTree;
 			this.openParenthesisToken=openParenthesisToken;
 			this.argumentsTree=argumentsTree;
 			this.closeParenthesisToken=closeParenthesisToken;
-			Object.freeze(this);
 		}
 
 		kind() { return "invocation"; }
@@ -418,9 +483,30 @@ function defineJavascriptTrees(Compiler) {
 		}
 
 		resolve(analyzer, parentScope) {
-			this.operandTree.resolve(analyzer, parentScope);
-			if(this.argumentsTree!==undefined)
-				this.argumentsTree.resolve(analyzer, parentScope);
+			this.operand=this.operandTree.resolve(analyzer, parentScope);
+			this.arguments=[];
+			if(this.argumentsTree!==undefined) {
+				let argumentTree=this.argumentsTree;
+				while(argumentTree.kind()==="infix"&&argumentTree.operatorToken.text===",") {
+					this.arguments.push(argumentTree.leftOperandTree.resolve(analyzer, parentScope));
+					argumentTree=argumentTree.rightOperandTree;
+				}
+				this.arguments.push(argumentTree.resolve(analyzer, parentScope));
+			}
+			if(this.operand===undefined)
+				return undefined;
+			Object.freeze(this);
+			if(this.operand.isFunction()===false)
+				analyzer.newDiagnostic(this.openParenthesisToken, "cannot invoke operand");
+			if(this.operand.isFunction()===true) {
+				const definition=this.operand.getFunction();
+				const minParameterCount=definition.parametersTree.getMinParameterCount();
+				if(this.arguments.length<minParameterCount)
+					analyzer.newDiagnostic(this.openParenthesisToken, "expected at least "+minParameterCount+" argument(s); got "+this.arguments.length);
+				const maxParameterCount=definition.parametersTree.getMaxParameterCount();
+				if(maxParameterCount!==undefined&&this.arguments.length>maxParameterCount)
+					analyzer.newDiagnostic(this.openParenthesisToken, "expected at most "+maxParameterCount+" argument(s); got "+this.arguments.length);
+			}
 		}
 
 		generate(generator) {
@@ -431,11 +517,16 @@ function defineJavascriptTrees(Compiler) {
 			generator.generate(this.closeParenthesisToken);
 		}
 
+		/* *** semantic part. *** */
+
+		isAssignable() { return false; }
+
 	});
 
-	Trees.Expression.Lambda=Object.freeze(class LambdaExpression {
+	Trees.Expression.Lambda=Object.freeze(class LambdaExpression extends Trees.Expression {
 
 		constructor(parametersTree, operatorToken, bodyTree) {
+			super();
 			this.parametersTree=parametersTree;
 			this.operatorToken=operatorToken;
 			this.bodyTree=bodyTree;
@@ -455,7 +546,10 @@ function defineJavascriptTrees(Compiler) {
 			Object.freeze(this);
 		}
 
-		resolve(analyzer, parentScope) { this.bodyTree.resolve(analyzer, this); }
+		resolve(analyzer, parentScope) {
+			this.bodyTree.resolve(analyzer, this);
+			return this;
+		}
 
 		generate(generator) {
 			this.parametersTree.generate(generator);
@@ -503,11 +597,20 @@ function defineJavascriptTrees(Compiler) {
 				this.vars.set(nameToken.text, nameToken);
 		}
 
+		/* *** semantic part. *** */
+
+		isAssignable() { return false; }
+
+		getFunction() { return this; }
+
+		isFunction() { return true; }
+
 	});
 
-	Trees.Expression.Literal=Object.freeze(class LiteralExpression {
+	Trees.Expression.Literal=Object.freeze(class LiteralExpression extends Trees.Expression {
 
 		constructor(token, value) {
+			super();
 			this.token=token;
 			this.value=value;
 			Object.freeze(this);
@@ -521,15 +624,22 @@ function defineJavascriptTrees(Compiler) {
 
 		buildScope(analyzer, parentScope) {}
 
-		resolve(analyzer, parentScope) {}
+		resolve(analyzer, parentScope) { return this; }
 
 		generate(generator) { generator.generate(this.token); }
 
+		/* *** semantic part. *** */
+
+		isAssignable() { return false; }
+
+		isFunction() { return false; }
+
 	});
 
-	Trees.Expression.MemberAccess=Object.freeze(class MemberAccessExpression {
+	Trees.Expression.MemberAccess=Object.freeze(class MemberAccessExpression extends Trees.Expression {
 
 		constructor(operandTree, dotToken, nameToken) {
+			super();
 			this.operandTree=operandTree;
 			this.dotToken=dotToken;
 			this.nameToken=nameToken;
@@ -554,9 +664,10 @@ function defineJavascriptTrees(Compiler) {
 
 	});
 
-	Trees.Expression.ObjectLiteral=Object.freeze(class ObjectLiteralExpression {
+	Trees.Expression.ObjectLiteral=Object.freeze(class ObjectLiteralExpression extends Trees.Expression {
 
 		constructor(openCurlyToken, memberTrees, closeCurlyToken) {
+			super();
 			this.openCurlyToken=openCurlyToken;
 			this.memberTrees=memberTrees;
 			this.closeCurlyToken=closeCurlyToken;
@@ -587,11 +698,18 @@ function defineJavascriptTrees(Compiler) {
 			generator.generate(this.closeCurlyToken);
 		}
 
+		/* *** semantic part. *** */
+
+		isAssignable() { return false; }
+
+		isFunction() { return false; }
+
 	});
 
-	Trees.Expression.Parenthesized=Object.freeze(class ParenthesizedExpression {
+	Trees.Expression.Parenthesized=Object.freeze(class ParenthesizedExpression extends Trees.Expression {
 
 		constructor(openParenthesisToken, operandTree, closeParenthesisToken) {
+			super();
 			this.openParenthesisToken=openParenthesisToken;
 			this.operandTree=operandTree;
 			this.closeParenthesisToken=closeParenthesisToken;
@@ -606,7 +724,7 @@ function defineJavascriptTrees(Compiler) {
 
 		buildScope(analyzer, parentScope) { this.operandTree.buildScope(analyzer, parentScope); }
 
-		resolve(analyzer, parentScope) { this.operandTree.resolve(analyzer, parentScope); }
+		resolve(analyzer, parentScope) { return this.operandTree.resolve(analyzer, parentScope); }
 
 		generate(generator) {
 			generator.generate(this.openParenthesisToken);
@@ -614,14 +732,20 @@ function defineJavascriptTrees(Compiler) {
 			generator.generate(this.closeParenthesisToken);
 		}
 
+		/* *** semantic part. *** */
+
+		isAssignable() { throw new Error("unsupported operation"); }
+
+		isFunction() { throw new Error("unsupported operation"); }
+
 	});
 
-	Trees.Expression.Postfix=Object.freeze(class PostfixExpression {
+	Trees.Expression.Postfix=Object.freeze(class PostfixExpression extends Trees.Expression {
 
 		constructor(operandTree, operatorToken) {
+			super();
 			this.operandTree=operandTree;
 			this.operatorToken=operatorToken;
-			Object.freeze(this);
 		}
 
 		kind() { return "postfix"; }
@@ -632,18 +756,31 @@ function defineJavascriptTrees(Compiler) {
 
 		buildScope(analyzer, parentScope) { this.operandTree.buildScope(analyzer, parentScope); }
 
-		resolve(analyzer, parentScope) { this.operandTree.resolve(analyzer, parentScope); }
+		resolve(analyzer, parentScope) {
+			this.operand=this.operandTree.resolve(analyzer, parentScope);
+			Object.freeze(this);
+			if(this.operand!==undefined&&this.operand.isAssignable()===false)
+				analyzer.newDiagnostic(this.operatorToken, "invalid increment/decrement operand");
+			return this;
+		}
 
 		generate(generator) {
 			this.operandTree.generate(generator);
 			generator.generate(this.operatorToken);
 		}
 
+		/* *** semantic part. *** */
+
+		isAssignable() { return false; }
+
+		isFunction() { return false; }
+
 	});
 
-	Trees.Expression.Prefix=Object.freeze(class PrefixExpression {
+	Trees.Expression.Prefix=Object.freeze(class PrefixExpression extends Trees.Expression {
 
 		constructor(operatorToken, operandTree) {
+			super();
 			this.operatorToken=operatorToken;
 			this.operandTree=operandTree;
 			Object.freeze(this);
@@ -657,18 +794,30 @@ function defineJavascriptTrees(Compiler) {
 
 		buildScope(analyzer, parentScope) { this.operandTree.buildScope(analyzer, parentScope); }
 
-		resolve(analyzer, parentScope) { this.operandTree.resolve(analyzer, parentScope); }
+		resolve(analyzer, parentScope) {
+			this.operandTree.resolve(analyzer, parentScope);
+			return this;
+		}
 
 		generate(generator) {
 			generator.generate(this.operatorToken);
 			this.operandTree.generate(generator);
 		}
 
+		/* *** semantic part. *** */
+
+		isAssignable() { return false; }
+
+		isFunction() { return false; }
+
 	});
 
-	Trees.Expression.ScopeAccess=Object.freeze(class ScopeAccessExpression {
+	Trees.Expression.ScopeAccess=Object.freeze(class ScopeAccessExpression extends Trees.Expression {
 
-		constructor(nameToken) { this.nameToken=nameToken; }
+		constructor(nameToken) {
+			super();
+			this.nameToken=nameToken;
+		}
 
 		kind() { return "scope-access"; }
 
@@ -689,9 +838,10 @@ function defineJavascriptTrees(Compiler) {
 
 	});
 
-	Trees.Expression.Ternary=Object.freeze(class TernaryExpression {
+	Trees.Expression.Ternary=Object.freeze(class TernaryExpression extends Trees.Expression {
 
 		constructor(conditionTree, questionToken, trueExpressionTree, colonToken, falseExpressionTree) {
+			super();
 			this.conditionTree=conditionTree;
 			this.questionToken=questionToken;
 			this.trueExpressionTree=trueExpressionTree;
@@ -811,11 +961,11 @@ function defineJavascriptTrees(Compiler) {
 
 	Trees.FunctionParameters=Object.freeze(class FunctionParameters {
 
-		constructor(openParenthesisToken, parameterTrees, closeParenthesisToken) {
+		constructor(openParenthesisToken, parameterTrees, variadicTree, closeParenthesisToken) {
 			this.openParenthesisToken=openParenthesisToken;
 			this.parameterTrees=parameterTrees;
+			this.variadicTree=variadicTree;
 			this.closeParenthesisToken=closeParenthesisToken;
-			Object.freeze(this);
 		}
 
 		kind() { return "function-parameters"; }
@@ -824,6 +974,8 @@ function defineJavascriptTrees(Compiler) {
 
 		buildParameters(analyzer) {
 			const parameters=new Map();
+			this.maxParameterCount=0;
+			this.minParameterCount=0;
 			for(const parameterTree of this.parameterTrees) {
 				const parameterNameToken=parameterTree.nameToken;
 				const parameterName=parameterNameToken.text;
@@ -831,9 +983,16 @@ function defineJavascriptTrees(Compiler) {
 					analyzer.newDiagnostic(parameterNameToken, "'arguments' can't be defined or assigned to");
 				else if(parameters.has(parameterName))
 					analyzer.newDiagnostic(parameterNameToken, "redefinition of parameter '"+parameterName+"'");
-				else
+				else {
 					parameters.set(parameterName, parameterTree);
+					this.maxParameterCount+=1;
+					if(!isParameterTreeOptional(parameterTree))
+						this.minParameterCount+=1;
+				}
 			}
+			if(this.variadicTree!==undefined)
+				this.maxParameterCount=undefined;
+			Object.freeze(this);
 			return Object.freeze(parameters);
 		}
 
@@ -846,6 +1005,12 @@ function defineJavascriptTrees(Compiler) {
 			}
 			generator.generate(this.closeParenthesisToken);
 		}
+
+		/*** semantic part. *** */
+
+		getMaxParameterCount() { return this.maxParameterCount; }
+
+		getMinParameterCount() { return this.minParameterCount; }
 
 	});
 
@@ -924,6 +1089,12 @@ function defineJavascriptTrees(Compiler) {
 		}
 
 		generate(generator) { generator.generate(this.nameToken); }
+
+		/*** semantic part. *** */
+
+		getMaxParameterCount() { return 1; }
+
+		getMinParameterCount() { return 1; }
 
 	});
 
