@@ -591,9 +591,33 @@ function defineJavascriptParser(Compiler) {
 		function parseExpressionPrefix() {
 			let token;
 			if((token=checkOperators(prefixOperators))!==undefined)
-				return new Compiler.JavascriptTrees.Expression.Prefix(token, parseExpressionPrefix());
+				switch(token.text) {
+				case "!":
+					return new Compiler.JavascriptTrees.Expression.PrefixLogicalNot(token, parseExpressionPrefix());
+				case "+":
+					return new Compiler.JavascriptTrees.Expression.PrefixIdentity(token, parseExpressionPrefix());
+				case "-":
+					return new Compiler.JavascriptTrees.Expression.PrefixNegate(token, parseExpressionPrefix());
+				case "...":
+					return new Compiler.JavascriptTrees.Expression.PrefixSpread(token, parseExpressionPrefix());
+				case "~":
+					return new Compiler.JavascriptTrees.Expression.PrefixBitwiseNot(token, parseExpressionPrefix());
+				case "++":
+					return new Compiler.JavascriptTrees.Expression.PrefixIncrement(token, parseExpressionPrefix());
+				case "--":
+					return new Compiler.JavascriptTrees.Expression.PrefixDecrement(token, parseExpressionPrefix());
+			}
 			if((token=checkKeywords(prefixKeywords))!==undefined)
-				return new Compiler.JavascriptTrees.Expression.Prefix(token, parseExpressionPrefix());
+				switch(token.text) {
+				case "delete":
+					return new Compiler.JavascriptTrees.Expression.PrefixDelete(token, parseExpressionPrefix());
+				case "new":
+					return new Compiler.JavascriptTrees.Expression.PrefixNew(token, parseExpressionPrefix());
+				case "typeof":
+					return new Compiler.JavascriptTrees.Expression.PrefixTypeOf(token, parseExpressionPrefix());
+				case "void":
+					return new Compiler.JavascriptTrees.Expression.PrefixVoid(token, parseExpressionPrefix());
+				}
 			return parseExpressionPostfix();
 		}
 

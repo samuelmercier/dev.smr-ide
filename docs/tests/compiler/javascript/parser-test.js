@@ -305,25 +305,25 @@
 
 	Tests.run(function testParseExpressionPrefix() {
 
-		function parsePrefixExpression(input) {
-			const tree=parseSingleExpression("prefix", input);
+		function parsePrefixExpression(kind, input) {
+			const tree=parseSingleExpression(kind, input);
 			Assertions.assertEqual(tree.firstToken(), tree.operatorToken);
 			Assertions.assertEqual(tree.lastToken(), tree.operandTree.nameToken);
 			assertScopeAccessExpression(tree.operandTree, "expression");
 			return tree;
 		}
 
-		assertPunctuator(parsePrefixExpression("! expression").operatorToken, "!");
-		assertPunctuator(parsePrefixExpression("+ expression").operatorToken, "+");
-		assertPunctuator(parsePrefixExpression("++ expression").operatorToken, "++");
-		assertPunctuator(parsePrefixExpression("- expression").operatorToken, "-");
-		assertPunctuator(parsePrefixExpression("-- expression").operatorToken, "--");
-		assertPunctuator(parsePrefixExpression("... expression").operatorToken, "...");
-		assertPunctuator(parsePrefixExpression("~ expression").operatorToken, "~");
-		assertKeyword(parsePrefixExpression("delete expression").operatorToken, "delete");
-		assertKeyword(parsePrefixExpression("new expression").operatorToken, "new");
-		assertKeyword(parsePrefixExpression("typeof expression").operatorToken, "typeof");
-		assertKeyword(parsePrefixExpression("void expression").operatorToken, "void");
+		assertPunctuator(parsePrefixExpression("prefix-logical-not", "! expression").operatorToken, "!");
+		assertPunctuator(parsePrefixExpression("prefix-identity", "+ expression").operatorToken, "+");
+		assertPunctuator(parsePrefixExpression("prefix-increment", "++ expression").operatorToken, "++");
+		assertPunctuator(parsePrefixExpression("prefix-negate", "- expression").operatorToken, "-");
+		assertPunctuator(parsePrefixExpression("prefix-decrement", "-- expression").operatorToken, "--");
+		assertPunctuator(parsePrefixExpression("prefix-spread", "... expression").operatorToken, "...");
+		assertPunctuator(parsePrefixExpression("prefix-bitwise-not", "~ expression").operatorToken, "~");
+		assertKeyword(parsePrefixExpression("prefix-delete", "delete expression").operatorToken, "delete");
+		assertKeyword(parsePrefixExpression("prefix-new", "new expression").operatorToken, "new");
+		assertKeyword(parsePrefixExpression("prefix-typeof", "typeof expression").operatorToken, "typeof");
+		assertKeyword(parsePrefixExpression("prefix-void", "void expression").operatorToken, "void");
 	});
 
 	Tests.run(function testParseExpressionObjectLiteral() {

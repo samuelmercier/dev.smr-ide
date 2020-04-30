@@ -1687,4 +1687,100 @@
 		// FIXME: add ternary
 	});
 
+	Tests.run(function testPrefixDecrement() {
+		// FIXME: add array-access
+
+		// FIXME: add array-literal
+
+		parseSingleStatementWithDiagnostics("{ var a; --(a=a); }")
+			.assertDiagnostic(9, 11, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("--(class {});")
+			.assertDiagnostic(0, 2, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("--(function() {});")
+			.assertDiagnostic(0, 2, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("--(1+1);")
+			.assertDiagnostic(0, 2, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("--(function() {});")
+			.assertDiagnostic(0, 2, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("--(_=>undefined);")
+			.assertDiagnostic(0, 2, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("--0;")
+			.assertDiagnostic(0, 2, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		// FIXME: add member-access
+
+		parseSingleStatementWithDiagnostics("{ var a; ----a; }")
+			.assertDiagnostic(9, 11, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ var a; --a--; }")
+			.assertDiagnostic(9, 11, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		// FIXME: add scope-access
+
+		// FIXME: add ternary
+	});
+
+	Tests.run(function testPrefixIncrement() {
+		// FIXME: add array-access
+
+		// FIXME: add array-literal
+
+		parseSingleStatementWithDiagnostics("{ var a; ++(a=a); }")
+			.assertDiagnostic(9, 11, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("++(class {});")
+			.assertDiagnostic(0, 2, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("++(function() {});")
+			.assertDiagnostic(0, 2, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("++(1+1);")
+			.assertDiagnostic(0, 2, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("++(function() {});")
+			.assertDiagnostic(0, 2, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("++(_=>undefined);")
+			.assertDiagnostic(0, 2, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("++0;")
+			.assertDiagnostic(0, 2, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		// FIXME: add member-access
+
+		parseSingleStatementWithDiagnostics("{ var a; ++++a; }")
+			.assertDiagnostic(9, 11, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ var a; ++a++; }")
+			.assertDiagnostic(9, 11, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		// FIXME: add scope-access
+
+		// FIXME: add ternary
+	});
+
 })();

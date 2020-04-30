@@ -783,10 +783,7 @@ function defineJavascriptTrees(Compiler) {
 			super();
 			this.operatorToken=operatorToken;
 			this.operandTree=operandTree;
-			Object.freeze(this);
 		}
-
-		kind() { return "prefix"; }
 
 		firstToken() { return this.operatorToken; }
 
@@ -809,6 +806,110 @@ function defineJavascriptTrees(Compiler) {
 		isAssignable() { return false; }
 
 		isFunction() { return false; }
+
+	});
+
+	Trees.Expression.PrefixBitwiseNot=Object.freeze(class PrefixBitwiseNotExpression extends Trees.Expression.Prefix {
+
+		constructor(operatorToken, operandTree) { super(operatorToken, operandTree); }
+
+		kind() { return "prefix-bitwise-not"; }
+
+	});
+
+	Trees.Expression.PrefixDecrement=Object.freeze(class PrefixDecrementExpression extends Trees.Expression.Prefix {
+
+		constructor(operatorToken, operandTree) { super(operatorToken, operandTree); }
+
+		kind() { return "prefix-decrement"; }
+
+		resolve(analyzer, parentScope) {
+			this.operand=this.operandTree.resolve(analyzer, parentScope);
+			Object.freeze(this);
+			if(this.operand!==undefined&&this.operand.isAssignable()===false)
+				analyzer.newDiagnostic(this.operatorToken, "invalid increment/decrement operand");
+			return this;
+		}
+
+	});
+
+	Trees.Expression.PrefixDelete=Object.freeze(class PrefixDeleteExpression extends Trees.Expression.Prefix {
+
+		constructor(operatorToken, operandTree) { super(operatorToken, operandTree); }
+
+		kind() { return "prefix-delete"; }
+
+	});
+
+	Trees.Expression.PrefixIdentity=Object.freeze(class PrefixIdentityExpression extends Trees.Expression.Prefix {
+
+		constructor(operatorToken, operandTree) { super(operatorToken, operandTree); }
+
+		kind() { return "prefix-identity"; }
+
+	});
+
+	Trees.Expression.PrefixIncrement=Object.freeze(class PrefixIncrementExpression extends Trees.Expression.Prefix {
+
+		constructor(operatorToken, operandTree) { super(operatorToken, operandTree); }
+
+		kind() { return "prefix-increment"; }
+
+		resolve(analyzer, parentScope) {
+			this.operand=this.operandTree.resolve(analyzer, parentScope);
+			Object.freeze(this);
+			if(this.operand!==undefined&&this.operand.isAssignable()===false)
+				analyzer.newDiagnostic(this.operatorToken, "invalid increment/decrement operand");
+			return this;
+		}
+
+	});
+
+	Trees.Expression.PrefixLogicalNot=Object.freeze(class PrefixLogicalNotExpression extends Trees.Expression.Prefix {
+
+		constructor(operatorToken, operandTree) { super(operatorToken, operandTree); }
+
+		kind() { return "prefix-logical-not"; }
+
+	});
+
+	Trees.Expression.PrefixNegate=Object.freeze(class PrefixNegateExpression extends Trees.Expression.Prefix {
+
+		constructor(operatorToken, operandTree) { super(operatorToken, operandTree); }
+
+		kind() { return "prefix-negate"; }
+
+	});
+
+	Trees.Expression.PrefixNew=Object.freeze(class PrefixNewExpression extends Trees.Expression.Prefix {
+
+		constructor(operatorToken, operandTree) { super(operatorToken, operandTree); }
+
+		kind() { return "prefix-new"; }
+
+	});
+
+	Trees.Expression.PrefixSpread=Object.freeze(class PrefixSpreadExpression extends Trees.Expression.Prefix {
+
+		constructor(operatorToken, operandTree) { super(operatorToken, operandTree); }
+
+		kind() { return "prefix-spread"; }
+
+	});
+
+	Trees.Expression.PrefixTypeOf=Object.freeze(class PrefixTypeOfExpression extends Trees.Expression.Prefix {
+
+		constructor(operatorToken, operandTree) { super(operatorToken, operandTree); }
+
+		kind() { return "prefix-typeof"; }
+
+	});
+
+	Trees.Expression.PrefixVoid=Object.freeze(class PrefixVoidExpression extends Trees.Expression.Prefix {
+
+		constructor(operatorToken, operandTree) { super(operatorToken, operandTree); }
+
+		kind() { return "prefix-void"; }
 
 	});
 
