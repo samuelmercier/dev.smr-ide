@@ -2,6 +2,8 @@
 
 function defineJavascriptTrees(Compiler) {
 
+	const Scope=Compiler.Javascript.Scope;
+
 	function isParameterTreeOptional(parameterTree) {
 		if(parameterTree.annotationTrees!==undefined)
 			for(const annotationTree of parameterTree.annotationTrees)
@@ -55,18 +57,18 @@ function defineJavascriptTrees(Compiler) {
 
 		lastToken() { return this.closeCurlyToken; }
 
-		buildScope(analyzer, sourceOrFunctionScope, parentScope) {
+		buildScope(analyzer, parentScope) {
 			this.declarations=new Map();
 			this.labels=this.labelsTree!==undefined ? this.labelsTree.analyze(analyzer, parentScope) : new Set();
-			this.scope=parentScope;
+			const scope=new Scope.Block(parentScope, this);
 			for(const statementTree of this.statementTrees)
-				statementTree.buildScope(analyzer, sourceOrFunctionScope, this);
+				statementTree.buildScope(analyzer, scope);
 			Object.freeze(this);
 		}
 
-		resolve(analyzer, parentScope) {
+		resolve(analyzer) {
 			for(const statementTree of this.statementTrees)
-				statementTree.resolve(analyzer, this);
+				statementTree.resolve(analyzer);
 		}
 
 		generate(generator) {
@@ -77,30 +79,6 @@ function defineJavascriptTrees(Compiler) {
 				statementTree.generate(generator);
 			generator.generate(this.closeCurlyToken);
 		}
-
-		resolveBreak(analyzer, breakToken, nameToken) {
-			if(nameToken===undefined||!this.labels.has(nameToken.text))
-				return this.scope.resolveBreak(analyzer, breakToken, nameToken);
-			return this;
-		}
-
-		resolveContinue(analyzer, continueToken, nameToken) {
-			return this.scope.resolveContinue(analyzer, continueToken, nameToken);
-		}
-
-		registerDeclaration(analyzer, nameToken) {
-			if(this.declarations.has(nameToken.text))
-				analyzer.newDiagnostic(nameToken, "redefinition of '"+nameToken.text+"'");
-			else
-				this.declarations.set(nameToken.text, nameToken);
-		}
-
-		resolveDeclaration(name) {
-			let declaration=this.declarations.get(name);
-			return declaration!==undefined ? declaration : this.scope.resolveDeclaration(name);
-		}
-
-		containsLabel(name) { return this.labels.has(name)||this.scope.containsLabel(name); }
 
 	}),
 
@@ -127,29 +105,12 @@ function defineJavascriptTrees(Compiler) {
 			this.blockTree=blockTree;
 		}
 
-		buildScope(analyzer, sourceOrFunctionScope, parentScope) {
-			this.scope=parentScope;
-			this.blockTree.buildScope(analyzer, sourceOrFunctionScope, this);
+		buildScope(analyzer, parentScope) {
+			this.blockTree.buildScope(analyzer, new Scope.Catch(parentScope, this));
 			Object.freeze(this);
 		}
 
-		resolve(analyzer, parentScope) { this.blockTree.resolve(analyzer, this); }
-
-		resolveBreak(analyzer, breakToken, nameToken) {
-			return this.scope.resolveBreak(analyzer, breakToken, nameToken);
-		}
-
-		resolveContinue(analyzer, continueToken, nameToken) {
-			return this.scope.resolveContinue(analyzer, continueToken, nameToken);
-		}
-
-		resolveDeclaration(name) {
-			if(name===this.nameToken.text)
-				return this.nameToken;
-			return this.scope.resolveDeclaration(name);
-		}
-
-		containsLabel(name) { return this.scope.containsLabel(name); }
+		resolve(analyzer) { this.blockTree.resolve(analyzer); }
 
 	}),
 
@@ -166,15 +127,14 @@ function defineJavascriptTrees(Compiler) {
 
 		buildScope(analyzer, parentScope) {
 			this.members=new Map();
-			this.scope=parentScope;
 			for(const memberTree of this.memberTrees)
-				memberTree.buildScope(analyzer, this);
+				memberTree.buildScope(analyzer, parentScope, this);
 			Object.freeze(this);
 		}
 
-		resolve(analyzer, parentScope) {
+		resolve(analyzer) {
 			for(const memberTree of this.memberTrees)
-				memberTree.resolve(analyzer, this);
+				memberTree.resolve(analyzer);
 		}
 
 		generate(generator) {
@@ -205,13 +165,13 @@ function defineJavascriptTrees(Compiler) {
 
 		kind() { return "empty"; }
 
-		buildScope(analyzer, sourceOrFunctionScope, parentScope) {
+		buildScope(analyzer, parentScope) {
 			if(this.labelsTree!==undefined)
 				for(const labelTree of this.labelsTree.labelTrees)
 					analyzer.newDiagnostic(labelTree.nameToken, "label cannot be referenced");
 		}
 
-		resolve(analyzer, parentScope) {}
+		resolve(analyzer) {}
 
 		generate(generator) {
 			if(this.labelsTree!==undefined)
@@ -253,9 +213,9 @@ function defineJavascriptTrees(Compiler) {
 			this.indexTree.buildScope(analyzer, parentScope);
 		}
 
-		resolve(analyzer, parentScope) {
-			this.operandTree.resolve(analyzer, parentScope);
-			this.indexTree.resolve(analyzer, parentScope);
+		resolve(analyzer) {
+			this.operandTree.resolve(analyzer);
+			this.indexTree.resolve(analyzer);
 		}
 
 		generate(generator) {
@@ -288,9 +248,9 @@ function defineJavascriptTrees(Compiler) {
 				this.initializersTree.buildScope(analyzer, parentScope);
 		}
 
-		resolve(analyzer, parentScope) {
+		resolve(analyzer) {
 			if(this.initializersTree!==undefined)
-				this.initializersTree.resolve(analyzer, parentScope);
+				this.initializersTree.resolve(analyzer);
 			return this;
 		}
 
@@ -327,9 +287,9 @@ function defineJavascriptTrees(Compiler) {
 			this.rightOperandTree.buildScope(analyzer, parentScope);
 		}
 
-		resolve(analyzer, parentScope) {
-			this.leftOperand=this.leftOperandTree.resolve(analyzer, parentScope);
-			this.rightOperand=this.rightOperandTree.resolve(analyzer, parentScope);
+		resolve(analyzer) {
+			this.leftOperand=this.leftOperandTree.resolve(analyzer);
+			this.rightOperand=this.rightOperandTree.resolve(analyzer);
 			if(this.leftOperand!==undefined&&this.leftOperand.isAssignable()===false)
 				analyzer.newDiagnostic(this.operatorToken, "left operand is not assignable");
 			Object.freeze(this);
@@ -368,8 +328,8 @@ function defineJavascriptTrees(Compiler) {
 
 		buildScope(analyzer, parentScope) { this.classTree.buildScope(analyzer, parentScope); }
 
-		resolve(analyzer, parentScope) {
-			this.classTree.resolve(analyzer, parentScope);
+		resolve(analyzer) {
+			this.classTree.resolve(analyzer);
 			return this;
 		}
 
@@ -399,8 +359,8 @@ function defineJavascriptTrees(Compiler) {
 
 		buildScope(analyzer, parentScope) { this.functionTree.buildScope(analyzer, parentScope); }
 
-		resolve(analyzer, parentScope) {
-			this.functionTree.resolve(analyzer, parentScope);
+		resolve(analyzer) {
+			this.functionTree.resolve(analyzer);
 			return this;
 		}
 
@@ -437,9 +397,9 @@ function defineJavascriptTrees(Compiler) {
 			this.rightOperandTree.buildScope(analyzer, parentScope);
 		}
 
-		resolve(analyzer, parentScope) {
-			this.leftOperandTree.resolve(analyzer, parentScope);
-			this.rightOperandTree.resolve(analyzer, parentScope);
+		resolve(analyzer) {
+			this.leftOperandTree.resolve(analyzer);
+			this.rightOperandTree.resolve(analyzer);
 			return this;
 		}
 
@@ -482,16 +442,16 @@ function defineJavascriptTrees(Compiler) {
 				this.argumentsTree.buildScope(analyzer, parentScope);
 		}
 
-		resolve(analyzer, parentScope) {
-			this.operand=this.operandTree.resolve(analyzer, parentScope);
+		resolve(analyzer) {
+			this.operand=this.operandTree.resolve(analyzer);
 			this.arguments=[];
 			if(this.argumentsTree!==undefined) {
 				let argumentTree=this.argumentsTree;
 				while(argumentTree.kind()==="infix"&&argumentTree.operatorToken.text===",") {
-					this.arguments.push(argumentTree.leftOperandTree.resolve(analyzer, parentScope));
+					this.arguments.push(argumentTree.leftOperandTree.resolve(analyzer));
 					argumentTree=argumentTree.rightOperandTree;
 				}
-				this.arguments.push(argumentTree.resolve(analyzer, parentScope));
+				this.arguments.push(argumentTree.resolve(analyzer));
 			}
 			if(this.operand===undefined)
 				return undefined;
@@ -540,14 +500,15 @@ function defineJavascriptTrees(Compiler) {
 
 		buildScope(analyzer, parentScope) {
 			this.parameters=this.parametersTree.buildParameters(analyzer);
-			this.scope=parentScope;
 			this.vars=new Map();
-			this.bodyTree.buildScope(analyzer, this, this);
+			this.vars.set("arguments", this);
+			this.vars.set("this", this);
+			this.bodyTree.buildScope(analyzer, new Scope.Function(parentScope, this));
 			Object.freeze(this);
 		}
 
-		resolve(analyzer, parentScope) {
-			this.bodyTree.resolve(analyzer, this);
+		resolve(analyzer) {
+			this.bodyTree.resolve(analyzer);
 			return this;
 		}
 
@@ -555,46 +516,6 @@ function defineJavascriptTrees(Compiler) {
 			this.parametersTree.generate(generator);
 			generator.generate(this.operatorToken);
 			this.bodyTree.generate(generator);
-		}
-
-		resolveBreak(analyzer, breakToken, nameToken) {
-			if(nameToken===undefined)
-				analyzer.newDiagnostic(breakToken, "unlabeled break must be inside loop or switch");
-			else
-				analyzer.newDiagnostic(nameToken, "cannot resolve label '"+nameToken.text+"'");
-			return undefined;
-		}
-
-		resolveContinue(analyzer, continueToken, nameToken) {
-			if(nameToken===undefined)
-				analyzer.newDiagnostic(continueToken, "continue must be inside loop");
-			else
-				analyzer.newDiagnostic(nameToken, "cannot resolve label '"+nameToken.text+"'");
-			return undefined;
-		}
-
-		resolveDeclaration(name) {
-			if(name==="this")
-				return this;
-			if(name==="arguments")
-				return this.arguments;
-			let declaration;
-			if((declaration=this.vars.get(name))!==undefined)
-				return declaration;
-			if((declaration=this.parameters.get(name))!==undefined)
-				return declaration;
-			return this.scope.resolveDeclaration(name);
-		}
-
-		containsLabel(name) { return undefined; }
-
-		registerVar(analyzer, nameToken) {
-			if(this.parameters.has(nameToken.text))
-				analyzer.newDiagnostic(nameToken, "redefinition of parameter '"+nameToken.text+"'");
-			else if(this.vars.has(nameToken.text))
-				analyzer.newDiagnostic(nameToken, "redefinition of '"+nameToken.text+"'");
-			else
-				this.vars.set(nameToken.text, nameToken);
 		}
 
 		/* *** semantic part. *** */
@@ -624,7 +545,7 @@ function defineJavascriptTrees(Compiler) {
 
 		buildScope(analyzer, parentScope) {}
 
-		resolve(analyzer, parentScope) { return this; }
+		resolve(analyzer) { return this; }
 
 		generate(generator) { generator.generate(this.token); }
 
@@ -654,7 +575,7 @@ function defineJavascriptTrees(Compiler) {
 
 		buildScope(analyzer, parentScope) { this.operandTree.buildScope(analyzer, parentScope); }
 
-		resolve(analyzer, parentScope) { this.operandTree.resolve(analyzer, parentScope); }
+		resolve(analyzer) { this.operandTree.resolve(analyzer); }
 
 		generate(generator) {
 			this.operandTree.generate(generator);
@@ -686,9 +607,9 @@ function defineJavascriptTrees(Compiler) {
 			Object.freeze(this);
 		}
 
-		resolve(analyzer, parentScope) {
+		resolve(analyzer) {
 			for(const memberTree of this.memberTrees)
-				memberTree.resolve(analyzer, parentScope);
+				memberTree.resolve(analyzer);
 		}
 
 		generate(generator) {
@@ -724,7 +645,7 @@ function defineJavascriptTrees(Compiler) {
 
 		buildScope(analyzer, parentScope) { this.operandTree.buildScope(analyzer, parentScope); }
 
-		resolve(analyzer, parentScope) { return this.operandTree.resolve(analyzer, parentScope); }
+		resolve(analyzer) { return this.operandTree.resolve(analyzer); }
 
 		generate(generator) {
 			generator.generate(this.openParenthesisToken);
@@ -756,8 +677,8 @@ function defineJavascriptTrees(Compiler) {
 
 		buildScope(analyzer, parentScope) { this.operandTree.buildScope(analyzer, parentScope); }
 
-		resolve(analyzer, parentScope) {
-			this.operand=this.operandTree.resolve(analyzer, parentScope);
+		resolve(analyzer) {
+			this.operand=this.operandTree.resolve(analyzer);
 			Object.freeze(this);
 			if(this.operand!==undefined&&this.operand.isAssignable()===false)
 				analyzer.newDiagnostic(this.operatorToken, "invalid increment/decrement operand");
@@ -791,8 +712,8 @@ function defineJavascriptTrees(Compiler) {
 
 		buildScope(analyzer, parentScope) { this.operandTree.buildScope(analyzer, parentScope); }
 
-		resolve(analyzer, parentScope) {
-			this.operandTree.resolve(analyzer, parentScope);
+		resolve(analyzer) {
+			this.operandTree.resolve(analyzer);
 			return this;
 		}
 
@@ -823,8 +744,8 @@ function defineJavascriptTrees(Compiler) {
 
 		kind() { return "prefix-decrement"; }
 
-		resolve(analyzer, parentScope) {
-			this.operand=this.operandTree.resolve(analyzer, parentScope);
+		resolve(analyzer) {
+			this.operand=this.operandTree.resolve(analyzer);
 			Object.freeze(this);
 			if(this.operand!==undefined&&this.operand.isAssignable()===false)
 				analyzer.newDiagnostic(this.operatorToken, "invalid increment/decrement operand");
@@ -855,8 +776,8 @@ function defineJavascriptTrees(Compiler) {
 
 		kind() { return "prefix-increment"; }
 
-		resolve(analyzer, parentScope) {
-			this.operand=this.operandTree.resolve(analyzer, parentScope);
+		resolve(analyzer) {
+			this.operand=this.operandTree.resolve(analyzer);
 			Object.freeze(this);
 			if(this.operand!==undefined&&this.operand.isAssignable()===false)
 				analyzer.newDiagnostic(this.operatorToken, "invalid increment/decrement operand");
@@ -926,12 +847,12 @@ function defineJavascriptTrees(Compiler) {
 
 		lastToken() { return this.nameToken; }
 
-		buildScope(analyzer, parentScope) {}
+		buildScope(analyzer, parentScope) { this.parentScope=parentScope; }
 
-		resolve(analyzer, parentScope) {
-			this.declaration=parentScope.resolveDeclaration(this.nameToken.text);
+		resolve(analyzer) {
+			this.declaration=this.parentScope.resolveScopeAccess(this.nameToken.text);
 			if(this.declaration===undefined)
-				analyzer.registerScopeAccess(parentScope, this);
+				analyzer.registerScopeAccess(this);
 			Object.freeze(this);
 		}
 
@@ -963,9 +884,9 @@ function defineJavascriptTrees(Compiler) {
 			this.falseExpressionTree.buildScope(analyzer, parentScope);
 		}
 
-		resolve(analyzer, parentScope) {
-			this.conditionTree.resolve(analyzer, parentScope);
-			this.trueExpressionTree.resolve(analyzer, parentScope);
+		resolve(analyzer) {
+			this.conditionTree.resolve(analyzer);
+			this.trueExpressionTree.resolve(analyzer);
 		}
 
 		generate(generator) {
@@ -1000,15 +921,14 @@ function defineJavascriptTrees(Compiler) {
 		}
 
 		buildScope(analyzer, parentScope) {
-			this.arguments=this.functionToken; // FIXME:
 			this.parameters=this.parametersTree.buildParameters(analyzer);
-			this.scope=parentScope;
 			this.vars=new Map();
-			this.blockTree.buildScope(analyzer, this, this);
+			this.vars.set("arguments", this.functionToken); // FIXME:
+			this.blockTree.buildScope(analyzer, new Scope.Function(parentScope, this));
 			Object.freeze(this);
 		}
 
-		resolve(analyzer, parentScope) { this.blockTree.resolve(analyzer, this); }
+		resolve(analyzer) { this.blockTree.resolve(analyzer); }
 
 		generate(generator) {
 			generator.generate(this.functionToken);
@@ -1016,46 +936,6 @@ function defineJavascriptTrees(Compiler) {
 				generator.generate(this.nameToken);
 			this.parametersTree.generate(generator);
 			this.blockTree.generate(generator);
-		}
-
-		resolveBreak(analyzer, breakToken, nameToken) {
-			if(nameToken===undefined)
-				analyzer.newDiagnostic(breakToken, "unlabeled break must be inside loop or switch");
-			else
-				analyzer.newDiagnostic(nameToken, "cannot resolve label '"+nameToken.text+"'");
-			return undefined;
-		}
-
-		resolveContinue(analyzer, continueToken, nameToken) {
-			if(nameToken===undefined)
-				analyzer.newDiagnostic(continueToken, "continue must be inside loop");
-			else
-				analyzer.newDiagnostic(nameToken, "cannot resolve label '"+nameToken.text+"'");
-			return undefined;
-		}
-
-		resolveDeclaration(name) {
-			if(name===this.name||name==="this")
-				return this;
-			if(name==="arguments")
-				return this.arguments;
-			let declaration;
-			if((declaration=this.vars.get(name))!==undefined)
-				return declaration;
-			if((declaration=this.parameters.get(name))!==undefined)
-				return declaration;
-			return this.scope.resolveDeclaration(name);
-		}
-
-		containsLabel(name) { return undefined; }
-
-		registerVar(analyzer, nameToken) {
-			if(this.parameters.has(nameToken.text))
-				analyzer.newDiagnostic(nameToken, "redefinition of parameter '"+nameToken.text+"'");
-			else if(this.vars.has(nameToken.text))
-				analyzer.newDiagnostic(nameToken, "redefinition of '"+nameToken.text+"'");
-			else
-				this.vars.set(nameToken.text, nameToken);
 		}
 
 	});
@@ -1209,20 +1089,22 @@ function defineJavascriptTrees(Compiler) {
 			this.blockTree=blockTree;
 		}
 
-		buildScope(analyzer, classTree) {
-			this.arguments=this.nameToken; // FIXME:
-			this.scope=classTree;
+		buildScope(analyzer, parentScope, classTree) {
 			if(classTree.members.has(this.nameToken.text))
 				analyzer.newDiagnostic(this.nameToken, "redefinition of '"+this.nameToken.text+"'");
 			else
 				classTree.members.set(this.nameToken.text, this.nameToken);
 			this.parameters=this.parametersTree.buildParameters(analyzer);
 			this.vars=new Map();
-			this.blockTree.buildScope(analyzer, this, this);
+			this.vars.set("arguments", this.nameToken); // FIXME:
+			this.vars.set("super", this.nameToken); // FIXME:
+			this.vars.set("this", this.nameToken); // FIXME:
+			this.vars.set(this.nameToken.text, this.nameToken); // FIXME:
+			this.blockTree.buildScope(analyzer, new Scope.Function(parentScope, this));
 			Object.freeze(this);
 		}
 
-		resolve(analyzer, parentScope) { this.blockTree.resolve(analyzer, this); }
+		resolve(analyzer) { this.blockTree.resolve(analyzer); }
 
 		generate(generator) {
 			if(this.annotationsTree!==undefined)
@@ -1232,48 +1114,6 @@ function defineJavascriptTrees(Compiler) {
 			generator.generate(this.nameToken);
 			this.parametersTree.generate(generator);
 			this.blockTree.generate(generator);
-		}
-
-		resolveBreak(analyzer, breakToken, nameToken) {
-			if(nameToken===undefined)
-				analyzer.newDiagnostic(breakToken, "unlabeled break must be inside loop or switch");
-			else
-				analyzer.newDiagnostic(nameToken, "cannot resolve label '"+nameToken.text+"'");
-			return undefined;
-		}
-
-		resolveContinue(analyzer, continueToken, nameToken) {
-			if(nameToken===undefined)
-				analyzer.newDiagnostic(continueToken, "continue must be inside loop");
-			else
-				analyzer.newDiagnostic(nameToken, "cannot resolve label '"+nameToken.text+"'");
-			return undefined;
-		}
-
-		resolveDeclaration(name) {
-			if(name===this.name||name==="this")
-				return this.nameToken;
-			if(name==="super")
-				return this.nameToken;
-			if(name==="arguments")
-				return this.arguments;
-			let declaration;
-			if((declaration=this.vars.get(name))!==undefined)
-				return declaration;
-			if((declaration=this.parameters.get(name))!==undefined)
-				return declaration;
-			return this.scope.resolveDeclaration(name);
-		}
-
-		containsLabel(name) { return undefined; }
-
-		registerVar(analyzer, nameToken) {
-			if(this.parameters.has(nameToken.text))
-				analyzer.newDiagnostic(nameToken, "redefinition of parameter '"+nameToken.text+"'");
-			else if(this.vars.has(nameToken.text))
-				analyzer.newDiagnostic(nameToken, "redefinition of '"+nameToken.text+"'");
-			else
-				this.vars.set(nameToken.text, nameToken);
 		}
 
 	});
@@ -1297,9 +1137,9 @@ function defineJavascriptTrees(Compiler) {
 			this.valueTree.buildScope(analyzer, parentScope);
 		}
 
-		resolve(analyzer, parentScope) {
-			this.keyTree.resolve(analyzer, parentScope);
-			this.valueTree.buildScope(analyzer, parentScope);
+		resolve(analyzer) {
+			this.keyTree.resolve(analyzer);
+			this.valueTree.resolve(analyzer);
 		}
 
 		generate(generator) {
@@ -1345,7 +1185,7 @@ function defineJavascriptTrees(Compiler) {
 			this.valueTree.buildScope(analyzer, parentScope);
 		}
 
-		resolve(analyzer, parentScope) { this.valueTree.resolve(analyzer, parentScope); }
+		resolve(analyzer) { this.valueTree.resolve(analyzer); }
 
 		generate(generator) {
 			if(this.precedingCommaToken!==undefined)
@@ -1370,13 +1210,12 @@ function defineJavascriptTrees(Compiler) {
 
 		buildScope(analyzer, parentScope) {
 			this.parameters=this.parametersTree.buildParameters(analyzer);
-			this.scope=parentScope;
 			this.vars=new Map();
-			this.blockTree.buildScope(analyzer, this, this);
+			this.blockTree.buildScope(analyzer, new Scope.Function(parentScope, this));
 			Object.freeze(this);
 		}
 
-		resolve(analyzer, parentScope) { this.blockTree.resolve(analyzer, parentScope); }
+		resolve(analyzer) { this.blockTree.resolve(analyzer); }
 
 		generate(generator) {
 			if(this.precedingCommaToken!==undefined)
@@ -1384,53 +1223,6 @@ function defineJavascriptTrees(Compiler) {
 			generator.generate(this.nameToken);
 			this.parametersTree.generate(generator);
 			this.blockTree.generate(generator);
-		}
-
-		resolveBreak(analyzer, breakToken, nameToken) {
-			if(nameToken===undefined)
-				analyzer.newDiagnostic(breakToken, "unlabeled break must be inside loop or switch");
-			else
-				analyzer.newDiagnostic(nameToken, "cannot resolve label '"+nameToken.text+"'");
-			return undefined;
-		}
-
-		resolveContinue(analyzer, continueToken, nameToken) {
-			if(nameToken===undefined)
-				analyzer.newDiagnostic(continueToken, "continue must be inside loop");
-			else
-				analyzer.newDiagnostic(nameToken, "cannot resolve label '"+nameToken.text+"'");
-			return undefined;
-		}
-
-		resolveDeclaration(name) {
-			if(name===this.name||name==="this")
-				return this;
-			if(name==="arguments")
-				return this.arguments;
-			let declaration;
-			if((declaration=this.vars.get(name))!==undefined)
-				return declaration;
-			if((declaration=this.parameters.get(name))!==undefined)
-				return declaration;
-			return this.scope.resolveDeclaration(name);
-		}
-
-		containsLabel(name) { return undefined; }
-
-		registerVar(analyzer, nameToken) {
-			if(this.parameters.has(nameToken.text))
-				analyzer.newDiagnostic(nameToken, "redefinition of parameter '"+nameToken.text+"'");
-			else if(this.vars.has(nameToken.text))
-				analyzer.newDiagnostic(nameToken, "redefinition of '"+nameToken.text+"'");
-			else
-				this.vars.set(nameToken.text, nameToken);
-		}
-
-		analyze(analyzer, scope, names) {
-			if(!names.set(this.nameToken.text))
-				analyzer.newDiagnostic(this.nameToken, "redefinition of "+this.keyToken.text+"'");
-			// FIXME:
-			return { build:function() {} };
 		}
 
 	});
@@ -1448,13 +1240,12 @@ function defineJavascriptTrees(Compiler) {
 		kind() { return "source"; }
 
 		buildScope() {
+			this.references=[];
+			const scope=new Scope.Source(Scope.Empty, this);
 			for(const statementTree of this.statementTrees)
-				statementTree.buildScope(this, this, this);
-		}
-
-		resolve() {
+				statementTree.buildScope(scope, scope);
 			for(const statementTree of this.statementTrees)
-				statementTree.resolve(this, this);
+				statementTree.resolve(scope);
 		}
 
 		generate(generator) {
@@ -1463,41 +1254,6 @@ function defineJavascriptTrees(Compiler) {
 			if(this.endOfInputToken!==undefined)
 				generator.generate(this.endOfInputToken);
 		}
-
-		resolveBreak(analyzer, breakToken, nameToken) {
-			if(nameToken===undefined)
-				analyzer.newDiagnostic(breakToken, "unlabeled break must be inside loop or switch");
-			else
-				analyzer.newDiagnostic(nameToken, "cannot resolve label '"+nameToken.text+"'");
-			return undefined;
-		}
-
-		resolveContinue(analyzer, continueToken, nameToken) {
-			if(nameToken===undefined)
-				analyzer.newDiagnostic(continueToken, "continue must be inside loop");
-			else
-				analyzer.newDiagnostic(nameToken, "cannot resolve label '"+nameToken.text+"'");
-			return undefined;
-		}
-
-		registerDeclaration(analyzer, nameToken) {
-			if(this.declarations.has(nameToken.text))
-				analyzer.newDiagnostic(nameToken, "redefinition of '"+nameToken.text+"'");
-			else
-				this.declarations.set(nameToken.text, nameToken);
-		}
-
-		resolveDeclaration(name) { return this.declarations.get(name); }
-
-		newDiagnostic(token, message) {
-			this.diagnostics.push(Compiler.newDiagnostic(token.source.id, token.line, token.offset, token.offset+token.text.length, message));
-		}
-
-		containsLabel(name) { return false; }
-
-		registerScopeAccess(scope, tree) { this.references.push({ scope:scope, tree:tree }); }
-
-		registerVar(analyzer, nameToken) { return this.registerDeclaration(analyzer, nameToken); }
 
 		line(offset) {
 			let i=0;
@@ -1520,15 +1276,15 @@ function defineJavascriptTrees(Compiler) {
 
 		kind() { return "break"; }
 
-		buildScope(analyzer, sourceOrFunctionScope, parentScope) {
+		buildScope(analyzer, parentScope) {
 			if(this.labelsTree!==undefined)
 				for(const labelTree of this.labelsTree.labelTrees)
 					analyzer.newDiagnostic(labelTree.nameToken, "label cannot be referenced");
-			this.statementTree=parentScope.resolveBreak(analyzer, this.breakToken, this.labelToken);
+			this.statementTree=parentScope.resolveBreak(this.breakToken, this.labelToken);
 			Object.freeze(this);
 		}
 
-		resolve(analyzer, parentScope) {}
+		resolve(analyzer) {}
 
 		generate(generator) {
 			if(this.labelsTree!==undefined)
@@ -1552,11 +1308,11 @@ function defineJavascriptTrees(Compiler) {
 		kind() { return "class"; }
 
 		buildScope(analyzer, parentScope) {
-			parentScope.registerDeclaration(analyzer, this.classTree.nameToken);
+			parentScope.registerDeclaration(this.classTree.nameToken, this.classTree.nameToken);
 			this.classTree.buildScope(analyzer, parentScope);
 		}
 
-		resolve(analyzer, parentScope) { this.classTree.resolve(analyzer, parentScope); }
+		resolve(analyzer) { this.classTree.resolve(analyzer); }
 
 		generate(generator) {
 			if(this.annotationsTree!==undefined) {
@@ -1586,15 +1342,15 @@ function defineJavascriptTrees(Compiler) {
 
 		kind() { return "continue"; }
 
-		buildScope(analyzer, sourceOrFunctionScope, parentScope) {
+		buildScope(analyzer, parentScope) {
 			if(this.labelsTree!==undefined)
 				for(const labelTree of this.labelsTree.labelTrees)
 					analyzer.newDiagnostic(labelTree.nameToken, "label cannot be referenced");
-			this.statementTree=parentScope.resolveContinue(analyzer, this.continueToken, this.labelToken);
+			this.statementTree=parentScope.resolveContinue(this.continueToken, this.labelToken);
 			Object.freeze(this);
 		}
 
-		resolve(analyzer, parentScope) {}
+		resolve(analyzer) {}
 
 		generate(generator) {
 			if(this.labelsTree!==undefined)
@@ -1631,34 +1387,18 @@ function defineJavascriptTrees(Compiler) {
 
 		kind() { return "do"; }
 
-		buildScope(analyzer, sourceOrFunctionScope, parentScope) {
+		buildScope(analyzer, parentScope) {
 			this.labels=this.labelsTree!==undefined ? this.labelsTree.analyze(analyzer, parentScope) : new Set();
-			this.scope=parentScope;
-			this.statementTree.buildScope(analyzer, sourceOrFunctionScope, this);
-			this.conditionTree.buildScope(analyzer, this);
+			const scope=new Scope.Loop(parentScope, this);
+			this.statementTree.buildScope(analyzer, scope);
+			this.conditionTree.buildScope(analyzer, scope);
 			Object.freeze(this);
 		}
 
-		resolve(analyzer, parentScope) {
-			this.statementTree.resolve(analyzer, this);
-			this.conditionTree.resolve(analyzer, this);
+		resolve(analyzer) {
+			this.statementTree.resolve(analyzer);
+			this.conditionTree.resolve(analyzer);
 		}
-
-		resolveBreak(analyzer, breakToken, nameToken) {
-			if(nameToken!==undefined&&!this.labels.has(nameToken.text))
-				return this.scope.resolveBreak(analyzer, breakToken, nameToken);
-			return this;
-		}
-
-		resolveContinue(analyzer, continueToken, nameToken) {
-			if(nameToken!==undefined&&!this.labels.has(nameToken.text))
-				return this.scope.resolveContinue(analyzer, continueToken, nameToken);
-			return this;
-		}
-
-		resolveDeclaration(name) { return this.scope.resolveDeclaration(name); }
-
-		containsLabel(name) { return this.labels.has(name)||this.scope.containsLabel(name); }
 
 		generate(generator) {
 			if(this.labelsTree!==undefined)
@@ -1685,14 +1425,14 @@ function defineJavascriptTrees(Compiler) {
 
 		kind() { return "expression"; }
 
-		buildScope(analyzer, sourceOrFunctionScope, parentScope) {
+		buildScope(analyzer, parentScope) {
 			if(this.labelsTree!==undefined)
 				for(const labelTree of this.labelsTree.labelTrees)
 					analyzer.newDiagnostic(labelTree.nameToken, "label cannot be referenced");
 			this.expressionTree.buildScope(analyzer, parentScope);
 		}
 
-		resolve(analyzer, parentScope) { this.expressionTree.resolve(analyzer, parentScope); }
+		resolve(analyzer) { this.expressionTree.resolve(analyzer); }
 
 		generate(generator) {
 			if(this.labelsTree!==undefined)
@@ -1729,53 +1469,27 @@ function defineJavascriptTrees(Compiler) {
 
 		kind() { return "for"; }
 
-		buildScope(analyzer, sourceOrFunctionScope, parentScope) {
+		buildScope(analyzer, parentScope) {
 			this.declarations=new Map();
 			this.labels=this.labelsTree!==undefined ? this.labelsTree.analyze(analyzer, parentScope) : new Set();
-			this.scope=parentScope;
-			this.initializerTree.buildScope(analyzer, sourceOrFunctionScope, this);
+			const scope=new Scope.For(parentScope, this);
+			this.initializerTree.buildScope(analyzer, scope);
 			if(this.conditionTree!==undefined)
-				this.conditionTree.buildScope(analyzer, this);
-			this.statementTree.buildScope(analyzer, sourceOrFunctionScope, this);
+				this.conditionTree.buildScope(analyzer, scope);
+			this.statementTree.buildScope(analyzer, scope);
 			if(this.incrementTree!==undefined)
-				this.incrementTree.buildScope(analyzer, this);
+				this.incrementTree.buildScope(analyzer, scope);
 			Object.freeze(this);
 		}
 
-		resolve(analyzer, parentScope) {
-			this.initializerTree.resolve(analyzer, this);
+		resolve(analyzer) {
+			this.initializerTree.resolve(analyzer);
 			if(this.conditionTree!==undefined)
-				this.conditionTree.resolve(analyzer, this);
-			this.statementTree.resolve(analyzer, this);
+				this.conditionTree.resolve(analyzer);
+			this.statementTree.resolve(analyzer);
 			if(this.incrementTree!==undefined)
-				this.incrementTree.resolve(analyzer, this);
+				this.incrementTree.resolve(analyzer);
 		}
-
-		resolveBreak(analyzer, breakToken, nameToken) {
-			if(nameToken!==undefined&&!this.labels.has(nameToken.text))
-				return this.scope.resolveBreak(analyzer, breakToken, nameToken);
-			return this;
-		}
-
-		resolveContinue(analyzer, continueToken, nameToken) {
-			if(nameToken!==undefined&&!this.labels.has(nameToken.text))
-				return this.scope.resolveContinue(analyzer, continueToken, nameToken);
-			return this;
-		}
-
-		registerDeclaration(analyzer, nameToken) {
-			if(this.declarations.has(nameToken.text))
-				analyzer.newDiagnostic(nameToken, "redefinition of '"+nameToken.text+"'");
-			else
-				this.declarations.set(nameToken.text, nameToken);
-		}
-
-		resolveDeclaration(name) {
-			let declaration=this.declarations.get(name);
-			return declaration!==undefined ? declaration : this.scope.resolveDeclaration(name);
-		}
-
-		containsLabel(name) { return this.labels.has(name)||this.scope.containsLabel(name); }
 
 		generate(generator) {
 			if(this.labelsTree!==undefined)
@@ -1820,48 +1534,28 @@ function defineJavascriptTrees(Compiler) {
 
 		kind() { return "for-each"; }
 
-		buildScope(analyzer, sourceOrFunctionScope, parentScope) {
+		buildScope(analyzer, parentScope) {
 			this.labels=this.labelsTree!==undefined ? this.labelsTree.analyze(analyzer, parentScope) : new Set();
-			this.scope=parentScope;
 			if(this.declarationKeywordToken!==undefined)
 				switch(this.declarationKeywordToken.text) {
 				case "var":
-					sourceOrFunctionScope.registerVar(analyzer, this.nameToken);
+					parentScope.registerVar(this.nameToken, this.nameToken);
 					break;
 				case "const":
 				case "let":
 					this.declaration=this.nameToken;
 					break;
 				}
-			this.iterableTree.buildScope(analyzer, this);
-			this.statementTree.buildScope(analyzer, sourceOrFunctionScope, this);
+			const scope=new Scope.ForEach(parentScope, this);
+			this.iterableTree.buildScope(analyzer, scope);
+			this.statementTree.buildScope(analyzer, scope);
 			Object.freeze(this);
 		}
 
-		resolve(analyzer, parentScope) {
-			this.iterableTree.resolve(analyzer, this);
-			this.statementTree.resolve(analyzer, this);
+		resolve(analyzer) {
+			this.iterableTree.resolve(analyzer);
+			this.statementTree.resolve(analyzer);
 		}
-
-		resolveBreak(analyzer, breakToken, nameToken) {
-			if(nameToken!==undefined&&!this.labels.has(nameToken.text))
-				return this.scope.resolveBreak(analyzer, breakToken, nameToken);
-			return this;
-		}
-
-		resolveContinue(analyzer, continueToken, nameToken) {
-			if(nameToken!==undefined&&!this.labels.has(nameToken.text))
-				return this.scope.resolveContinue(analyzer, continueToken, nameToken);
-			return this;
-		}
-
-		resolveDeclaration(name) {
-			return this.declaration!==undefined&&this.declaration.text===name
-				? this.declaration
-				: this.scope.resolveDeclaration(name);
-		}
-
-		containsLabel(name) { return this.labels.has(name)||this.scope.containsLabel(name); }
 
 		generate(generator) {
 			if(this.labelsTree!==undefined)
@@ -1889,12 +1583,12 @@ function defineJavascriptTrees(Compiler) {
 
 		kind() { return "function"; }
 
-		buildScope(analyzer, sourceOrFunctionScope, parentScope) {
-			parentScope.registerDeclaration(analyzer, this.functionTree.nameToken);
+		buildScope(analyzer, parentScope) {
+			parentScope.registerDeclaration(this.functionTree.nameToken, this.functionTree.nameToken);
 			this.functionTree.buildScope(analyzer, parentScope);
 		}
 
-		resolve(analyzer, parentScope) { this.functionTree.resolve(analyzer, parentScope); }
+		resolve(analyzer) { this.functionTree.resolve(analyzer); }
 
 		generate(generator) {
 			if(this.annotationsTree!==undefined) {
@@ -1935,21 +1629,21 @@ function defineJavascriptTrees(Compiler) {
 
 		kind() { return "if"; }
 
-		buildScope(analyzer, sourceOrFunctionScope, parentScope) {
+		buildScope(analyzer, parentScope) {
 			this.labels=this.labelsTree!==undefined ? this.labelsTree.analyze(analyzer, parentScope) : new Set();
-			this.scope=parentScope;
-			this.conditionTree.buildScope(analyzer, this);
-			this.statementTree.buildScope(analyzer, sourceOrFunctionScope, this);
+			const scope=new Scope.If(parentScope, this);
+			this.conditionTree.buildScope(analyzer, scope);
+			this.statementTree.buildScope(analyzer, scope);
 			if(this.elseClauseTree!==undefined)
-				this.elseClauseTree.statementTree.buildScope(analyzer, sourceOrFunctionScope, this);
+				this.elseClauseTree.statementTree.buildScope(analyzer, scope);
 			Object.freeze(this);
 		}
 
-		resolve(analyzer, parentScope) {
-			this.conditionTree.resolve(analyzer, parentScope);
-			this.statementTree.resolve(analyzer, parentScope);
+		resolve(analyzer) {
+			this.conditionTree.resolve(analyzer);
+			this.statementTree.resolve(analyzer);
 			if(this.elseClauseTree!==undefined)
-				this.elseClauseTree.statementTree.resolve(analyzer, parentScope);
+				this.elseClauseTree.statementTree.resolve(analyzer);
 		}
 
 		generate(generator) {
@@ -1966,20 +1660,6 @@ function defineJavascriptTrees(Compiler) {
 			}
 		}
 
-		resolveBreak(analyzer, breakToken, nameToken) {
-			if(nameToken===undefined||!this.labels.has(nameToken.text))
-				return this.scope.resolveBreak(analyzer, breakToken, nameToken);
-			return this;
-		}
-
-		resolveContinue(analyzer, continueToken, nameToken) {
-			return this.scope.resolveContinue(analyzer, continueToken, nameToken);
-		}
-
-		resolveDeclaration(name) { return this.scope.resolveDeclaration(name); }
-
-		containsLabel(name) { return this.labels.has(name)||this.scope.containsLabel(name); }
-
 	});
 
 	Trees.Statement.Return=Object.freeze(class ReturnStatement {
@@ -1994,7 +1674,7 @@ function defineJavascriptTrees(Compiler) {
 
 		kind() { return "return"; }
 
-		buildScope(analyzer, sourceOrFunctionScope, parentScope) {
+		buildScope(analyzer, parentScope) {
 			if(this.labelsTree!==undefined)
 				for(const labelTree of this.labelsTree.labelTrees)
 					analyzer.newDiagnostic(labelTree.nameToken, "label cannot be referenced");
@@ -2002,9 +1682,9 @@ function defineJavascriptTrees(Compiler) {
 				this.expressionTree.buildScope(analyzer, parentScope);
 		}
 
-		resolve(analyzer, parentScope) {
+		resolve(analyzer) {
 			if(this.expressionTree!==undefined)
-				this.expressionTree.resolve(analyzer, parentScope);
+				this.expressionTree.resolve(analyzer);
 		}
 
 		generate(generator) {
@@ -2042,25 +1722,25 @@ function defineJavascriptTrees(Compiler) {
 
 		kind() { return "switch"; }
 
-		buildScope(analyzer, sourceOrFunctionScope, parentScope) {
+		buildScope(analyzer, parentScope) {
 			this.declarations=new Map();
 			this.labels=this.labelsTree!==undefined ? this.labelsTree.analyze(analyzer, parentScope) : new Set();
-			this.scope=parentScope;
+			const scope=new Scope.Switch(parentScope, this);
 			for(const caseTree of this.caseTrees) {
 				if(caseTree.expressionTree!==undefined)
-					caseTree.expressionTree.buildScope(analyzer, this);
+					caseTree.expressionTree.buildScope(analyzer, scope);
 				for(const statementTree of caseTree.statementTrees)
-					statementTree.buildScope(analyzer, sourceOrFunctionScope, this);
+					statementTree.buildScope(analyzer, scope);
 			}
 			Object.freeze(this);
 		}
 
-		resolve(analyzer, parentScope) {
+		resolve(analyzer) {
 			for(const caseTree of this.caseTrees) {
 				if(caseTree.expressionTree!==undefined)
-					caseTree.expressionTree.resolve(analyzer, this);
+					caseTree.expressionTree.resolve(analyzer);
 				for(const statementTree of caseTree.statementTrees)
-					statementTree.resolve(analyzer, this);
+					statementTree.resolve(analyzer);
 			}
 		}
 
@@ -2083,30 +1763,6 @@ function defineJavascriptTrees(Compiler) {
 			generator.generate(this.closeCurlyToken);
 		}
 
-		resolveBreak(analyzer, breakToken, nameToken) {
-			if(nameToken!==undefined&&!this.labels.has(nameToken.text))
-				return this.scope.resolveBreak(analyzer, breakToken, nameToken);
-			return this;
-		}
-
-		resolveContinue(analyzer, continueToken, nameToken) {
-			return this.scope.resolveContinue(analyzer, continueToken, nameToken);
-		}
-
-		registerDeclaration(analyzer, nameToken) {
-			if(this.declarations.has(nameToken.text))
-				analyzer.newDiagnostic(nameToken, "redefinition of '"+nameToken.text+"'");
-			else
-				this.declarations.set(nameToken.text, nameToken);
-		}
-
-		resolveDeclaration(name) {
-			let declaration=this.declarations.get(name);
-			return declaration!==undefined ? declaration : this.scope.resolveDeclaration(name);
-		}
-
-		containsLabel(name) { return this.labels.has(name)||this.scope.containsLabel(name); }
-
 	});
 
 	Trees.Statement.Throw=Object.freeze(class ThrowStatement {
@@ -2120,7 +1776,7 @@ function defineJavascriptTrees(Compiler) {
 
 		kind() { return "throw"; }
 
-		buildScope(analyzer, sourceOrFunctionScope, parentScope) {
+		buildScope(analyzer, parentScope) {
 			if(this.labelsTree!==undefined)
 				for(const labelTree of this.labelsTree.labelTrees)
 					analyzer.newDiagnostic(labelTree.nameToken, "label cannot be referenced");
@@ -2128,7 +1784,7 @@ function defineJavascriptTrees(Compiler) {
 			Object.freeze(this);
 		}
 
-		resolve(analyzer, parentScope) { this.expressionTree.resolve(analyzer, parentScope); }
+		resolve(analyzer) { this.expressionTree.resolve(analyzer); }
 
 		generate(generator) {
 			if(this.labelsTree!==undefined)
@@ -2152,22 +1808,22 @@ function defineJavascriptTrees(Compiler) {
 
 		kind() { return "try"; }
 
-		buildScope(analyzer, sourceOrFunctionScope, parentScope) {
+		buildScope(analyzer, parentScope) {
 			this.labels=this.labelsTree!==undefined ? this.labelsTree.analyze(analyzer, parentScope) : new Set();
-			this.blockTree.buildScope(analyzer, sourceOrFunctionScope, parentScope);
+			this.blockTree.buildScope(analyzer, parentScope);
 			if(this.catchClauseTree!==undefined)
-				this.catchClauseTree.buildScope(analyzer, sourceOrFunctionScope, parentScope);
+				this.catchClauseTree.buildScope(analyzer, parentScope);
 			if(this.finallyClauseTree!==undefined)
-				this.finallyClauseTree.blockTree.buildScope(analyzer, sourceOrFunctionScope, parentScope);
+				this.finallyClauseTree.blockTree.buildScope(analyzer, parentScope);
 			Object.freeze(this);
 		}
 
-		resolve(analyzer, parentScope) {
-			this.blockTree.resolve(analyzer, parentScope);
+		resolve(analyzer) {
+			this.blockTree.resolve(analyzer);
 			if(this.catchClauseTree!==undefined)
-				this.catchClauseTree.resolve(analyzer, parentScope);
+				this.catchClauseTree.resolve(analyzer);
 			if(this.finallyClauseTree!==undefined)
-				this.finallyClauseTree.blockTree.resolve(analyzer, parentScope);
+				this.finallyClauseTree.blockTree.resolve(analyzer);
 		}
 
 		generate(generator) {
@@ -2210,17 +1866,17 @@ function defineJavascriptTrees(Compiler) {
 
 		kind() { return "while"; }
 
-		buildScope(analyzer, sourceOrFunctionScope, parentScope) {
+		buildScope(analyzer, parentScope) {
 			this.labels=this.labelsTree!==undefined ? this.labelsTree.analyze(analyzer, parentScope) : new Set();
-			this.scope=parentScope;
-			this.conditionTree.buildScope(analyzer, parentScope);
-			this.statementTree.buildScope(analyzer, sourceOrFunctionScope, this);
+			const scope=new Scope.Loop(parentScope, this);
+			this.conditionTree.buildScope(analyzer, scope);
+			this.statementTree.buildScope(analyzer, scope);
 			Object.freeze(this);
 		}
 
-		resolve(analyzer, parentScope) {
-			this.conditionTree.resolve(analyzer, parentScope);
-			this.statementTree.resolve(analyzer, this);
+		resolve(analyzer) {
+			this.conditionTree.resolve(analyzer);
+			this.statementTree.resolve(analyzer);
 		}
 
 		generate(generator) {
@@ -2232,22 +1888,6 @@ function defineJavascriptTrees(Compiler) {
 			generator.generate(this.closeParenthesisToken);
 			this.statementTree.generate(generator);
 		}
-
-		resolveBreak(analyzer, breakToken, nameToken) {
-			if(nameToken!==undefined&&!this.labels.has(nameToken.text))
-				return this.scope.resolveBreak(analyzer, breakToken, nameToken);
-			return this;
-		}
-
-		resolveContinue(analyzer, continueToken, nameToken) {
-			if(nameToken!==undefined&&!this.labels.has(nameToken.text))
-				return this.scope.resolveContinue(analyzer, continueToken, nameToken);
-			return this;
-		}
-
-		resolveDeclaration(name) { return this.scope.resolveDeclaration(name); }
-
-		containsLabel(name) { return this.labels.has(name)||this.scope.containsLabel(name); }
 
 	});
 
@@ -2370,17 +2010,17 @@ function defineJavascriptTrees(Compiler) {
 
 		kind() { return "var"; }
 
-		buildScope(analyzer, sourceOrFunctionScope, parentScope) {
+		buildScope(analyzer, parentScope) {
 			for(const declaratorTree of this.declaratorTrees) {
 				switch(this.keywordToken.text) {
 				case "const":
-					parentScope.registerDeclaration(analyzer, declaratorTree.nameToken);
+					parentScope.registerDeclaration(declaratorTree.nameToken, declaratorTree.nameToken);
 					break;
 				case "let":
-					parentScope.registerDeclaration(analyzer, declaratorTree.nameToken);
+					parentScope.registerDeclaration(declaratorTree.nameToken, declaratorTree.nameToken);
 					break;
 				case "var":
-					sourceOrFunctionScope.registerVar(analyzer, declaratorTree.nameToken);
+					parentScope.registerVar(declaratorTree.nameToken, declaratorTree.nameToken);
 					break;
 				default:
 					analyzer.newDiagnostic(this.keywordToken, "internal error: invalid keyword '"+this.keywordToken.text+"'");
@@ -2390,10 +2030,10 @@ function defineJavascriptTrees(Compiler) {
 			}
 		}
 
-		resolve(analyzer, parentScope) {
+		resolve(analyzer) {
 			for(const declaratorTree of this.declaratorTrees)
 				if(declaratorTree.initializerTree!==undefined)
-					declaratorTree.initializerTree.expressionTree.resolve(analyzer, parentScope);
+					declaratorTree.initializerTree.expressionTree.resolve(analyzer);
 		}
 
 		generate(generator) {

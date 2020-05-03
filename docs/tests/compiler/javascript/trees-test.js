@@ -1463,8 +1463,7 @@
 		const scopeAccessTree=functionTree.blockTree.statementTrees[3].expressionTree;
 		Assertions.assertUndefined(scopeAccessTree.declaration);
 		Assertions.assertEqual(result.references.length, 1);
-		Assertions.assertEqual(result.references[0].scope, functionTree.blockTree);
-		Assertions.assertEqual(result.references[0].tree, scopeAccessTree);
+		Assertions.assertEqual(result.references[0], scopeAccessTree);
 	});
 
 	Tests.run(function testArgumentsResolutionInMethod() {

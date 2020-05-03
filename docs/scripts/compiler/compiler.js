@@ -3,6 +3,7 @@
 const Compiler=function() {
 
 	const Compiler={};
+	Compiler.Javascript=defineJavascript();
 	const JavascriptParser=defineJavascriptParser(Compiler);
 	Compiler.JavascriptTrees=defineJavascriptTrees(Compiler);
 
@@ -166,8 +167,7 @@ const Compiler=function() {
 					declarations.set(declaration[0], declaration[1]);
 		}
 		for(const sourceTree of sourceTrees)
-			for(const reference of sourceTree.references) {
-				const tree=reference.tree;
+			for(const tree of sourceTree.references) {
 				const nameToken=tree.nameToken;
 				if(declarations.get(nameToken.text)===undefined&&(scope===undefined||scope.resolve(nameToken.text)===undefined))
 					newDiagnostic(nameToken, "cannot resolve '"+nameToken.text+"'");

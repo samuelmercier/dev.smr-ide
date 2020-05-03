@@ -159,8 +159,6 @@ function defineJavascriptParser(Compiler) {
 			diagnostics.push(e.diagnostic);
 		}
 		source.buildScope();
-		source.references=[];
-		source.resolve();
 		return Object.freeze(source);
 
 		/*** helper functions. *** */
