@@ -126,13 +126,23 @@ function defineJavascriptTrees(Compiler) {
 		}
 
 		buildScope(analyzer, parentScope) {
+			if(this.extendsClauseTree!==undefined)
+				this.extendsClauseTree.baseClassExpressionTree.buildScope(analyzer, parentScope);
 			this.members=new Map();
 			for(const memberTree of this.memberTrees)
 				memberTree.buildScope(analyzer, parentScope, this);
-			Object.freeze(this);
 		}
 
 		resolve(analyzer) {
+			if(this.extendsClauseTree!==undefined) {
+				const extendsClause=this.extendsClauseTree.baseClassExpressionTree.resolve(analyzer);
+				if(extendsClause!==undefined)
+					if(extendsClause.isClass()===false)
+						analyzer.newDiagnostic(this.extendsClauseTree.extendsToken, "extends expression is not a class");
+					else
+						this.extendsClause=extendsClause;
+			}
+			Object.freeze(this);
 			for(const memberTree of this.memberTrees)
 				memberTree.resolve(analyzer);
 		}
@@ -157,6 +167,8 @@ function defineJavascriptTrees(Compiler) {
 
 		isAssignable() { return false; }
 
+		isClass() { return true; }
+
 		isFunction() { return false; }
 
 	}),
@@ -168,6 +180,12 @@ function defineJavascriptTrees(Compiler) {
 			this.nameToken=nameToken;
 			this.initializerTree=initializerTree;
 		}
+
+		/* *** semantic part. *** */
+
+		isClass() { return undefined; }
+
+		isFunction() { return undefined; }
 
 	};
 
@@ -189,8 +207,6 @@ function defineJavascriptTrees(Compiler) {
 
 		isAssignable() { return false; }
 
-		isFunction() { return undefined; }
-
 	});
 
 	Trees.Declarator.Let=Object.freeze(class Let extends Trees.Declarator {
@@ -209,8 +225,6 @@ function defineJavascriptTrees(Compiler) {
 
 		isAssignable() { return true; }
 
-		isFunction() { return undefined; }
-
 	});
 
 	Trees.Declarator.Var=Object.freeze(class Var extends Trees.Declarator {
@@ -228,8 +242,6 @@ function defineJavascriptTrees(Compiler) {
 		/* *** semantic part. *** */
 
 		isAssignable() { return true; }
-
-		isFunction() { return undefined; }
 
 	});
 
@@ -266,6 +278,8 @@ function defineJavascriptTrees(Compiler) {
 		/* *** semantic part. *** */
 
 		isAssignable() { return undefined; }
+
+		isClass() { return undefined; }
 
 		isFunction() { return undefined; }
 
@@ -343,6 +357,8 @@ function defineJavascriptTrees(Compiler) {
 
 		/* *** semantic part. *** */
 
+		isClass() { return false; }
+
 		isFunction() { return false; }
 
 	});
@@ -385,6 +401,8 @@ function defineJavascriptTrees(Compiler) {
 		/* *** semantic part. *** */
 
 		isAssignable() { return false; }
+
+		isClass() { return this.rightOperand.isClass(); }
 
 		getFunction() { return this.rightOperand.getFunction(); }
 
@@ -450,6 +468,8 @@ function defineJavascriptTrees(Compiler) {
 
 		isAssignable() { return false; }
 
+		isClass() { return true; }
+
 		getFunction() { return this.functionTree; }
 
 		isFunction() { return true; }
@@ -495,6 +515,8 @@ function defineJavascriptTrees(Compiler) {
 		/* *** semantic part. *** */
 
 		isAssignable() { return false; }
+
+		isClass() { return false; }
 
 		isFunction() { return false; }
 
@@ -601,6 +623,8 @@ function defineJavascriptTrees(Compiler) {
 		/* *** semantic part. *** */
 
 		isAssignable() { return false; }
+
+		isClass() { return false; }
 
 		getFunction() { return this; }
 
@@ -774,6 +798,8 @@ function defineJavascriptTrees(Compiler) {
 
 		isAssignable() { return false; }
 
+		isClass() { return false; }
+
 		isFunction() { return false; }
 
 	});
@@ -805,6 +831,8 @@ function defineJavascriptTrees(Compiler) {
 		/* *** semantic part. *** */
 
 		isAssignable() { return false; }
+
+		isClass() { return false; }
 
 		isFunction() { return false; }
 
@@ -1022,6 +1050,8 @@ function defineJavascriptTrees(Compiler) {
 		/* *** semantic part. *** */
 
 		isAssignable() { return false; }
+
+		isClass() { return true; }
 
 		getFunction() { return this; }
 
@@ -1678,6 +1708,8 @@ function defineJavascriptTrees(Compiler) {
 		}
 
 		isAssignable() { return this.declarationKeywordToken.text!=="const"; }
+
+		isClass() { return undefined; }
 
 		isFunction() { return undefined; }
 

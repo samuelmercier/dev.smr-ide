@@ -10,6 +10,8 @@ function defineJavascript() {
 
 			isAssignable() { return undefined; }
 
+			isClass() { return undefined; }
+
 			isFunction() { return undefined; }
 
 		};
@@ -19,6 +21,8 @@ function defineJavascript() {
 			constructor() { super(); }
 
 			isAssignable() { return false; }
+
+			isClass() { return false; }
 
 			isFunction() { return false; }
 

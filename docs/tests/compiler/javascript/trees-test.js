@@ -1594,6 +1594,76 @@
 		// FIXME: add ternary
 	});
 
+	Tests.run(function testExtends() {
+		// FIXME: add array-access
+
+		// FIXME: array literal
+		parseSingleStatementWithDiagnostics("class C extends [] {}")
+			.assertDiagnostic(8, 15, "extends expression is not a class")
+			.assertNoMoreDiagnostic();
+
+		// FIXME: better test
+		parseSingleStatementWithDiagnostics("{ var a; class C extends a=a {} }")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("class C extends class {} {}")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("class C extends function() {} {}")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("class C extends 1+1 {}")
+			.assertDiagnostic(8, 15, "extends expression is not a class")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("class C extends _=>undefined {}")
+			.assertDiagnostic(8, 15, "extends expression is not a class")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("class C extends ()=>undefined {}")
+			.assertDiagnostic(8, 15, "extends expression is not a class")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ var a; class C extends a=0 {} }")
+			.assertNoMoreDiagnostic();
+
+		// FIXME: add member-access
+
+		parseSingleStatementWithDiagnostics("{ var a; class C extends a++ {} }")
+			.assertDiagnostic(17, 24, "extends expression is not a class")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ var a; class C extends ++a {} }")
+			.assertDiagnostic(17, 24, "extends expression is not a class")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("for(const a of {}) class C extends a {};")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("for(let a of {}) class C extends a {};")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("for(var a of {}) class C extends a {};")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ function f() {} class C extends f {} }")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ const f=0; class C extends f {} }")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ let f; class C extends f {} }")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ var f; class C extends f {} }")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("function f() { class C extends arguments {} }")
+			.assertDiagnostic(23, 30, "extends expression is not a class")
+			.assertNoMoreDiagnostic();
+
+		// FIXME: add ternary
+	});
+
 	Tests.run(function testInvocation() {
 		// FIXME: add array-access
 
