@@ -129,6 +129,7 @@ function defineJavascriptTrees(Compiler) {
 			if(this.extendsClauseTree!==undefined)
 				this.extendsClauseTree.baseClassExpressionTree.buildScope(analyzer, parentScope);
 			this.members=new Map();
+			this.statics=new Map();
 			for(const memberTree of this.memberTrees)
 				memberTree.buildScope(analyzer, parentScope, this);
 		}
@@ -161,8 +162,6 @@ function defineJavascriptTrees(Compiler) {
 			generator.generate(this.closeCurlyToken);
 		}
 
-		resolveDeclaration(name) { return this.scope.resolveDeclaration(name); }
-
 		/* *** semantic part. *** */
 
 		isAssignable() { return false; }
@@ -171,7 +170,12 @@ function defineJavascriptTrees(Compiler) {
 
 		isFunction() { return false; }
 
-		resolveMemberAccess(memberName) { return undefined; }
+		resolveMemberAccess(analyzer, nameToken) {
+			const member=this.statics.get(nameToken.text);
+			if(member===undefined)
+				analyzer.newDiagnostic(nameToken, "cannot resolve '"+nameToken.text+"'");
+			return member;
+		}
 
 	}),
 
@@ -189,7 +193,7 @@ function defineJavascriptTrees(Compiler) {
 
 		isFunction() { return undefined; }
 
-		resolveMemberAccess() { return undefined; }
+		resolveMemberAccess(analyzer, nameToken) { return undefined; }
 
 	};
 
@@ -287,7 +291,7 @@ function defineJavascriptTrees(Compiler) {
 
 		isFunction() { return undefined; }
 
-		resolveMemberAccess(nameToken) { return undefined; }
+		resolveMemberAccess(analyzer, nameToken) { return undefined; }
 
 	};
 
@@ -444,6 +448,8 @@ function defineJavascriptTrees(Compiler) {
 		isAssignable() { return false; }
 
 		isFunction() { return false; }
+
+		resolveMemberAccess(analyzer, nameToken) { return this.classTree.resolveMemberAccess(analyzer, nameToken); }
 
 	});
 
@@ -687,7 +693,7 @@ function defineJavascriptTrees(Compiler) {
 		resolve(analyzer) {
 			this.operand=this.operandTree.resolve(analyzer);
 			Object.freeze(this);
-			return this.operand!==undefined ? this.operand.resolveMemberAccess(this.nameToken) : undefined;
+			return this.operand!==undefined ? this.operand.resolveMemberAccess(analyzer, this.nameToken) : undefined;
 		}
 
 		generate(generator) {
@@ -1066,7 +1072,7 @@ function defineJavascriptTrees(Compiler) {
 
 		isFunction() { return true; }
 
-		resolveMemberAccess() { return undefined; }
+		resolveMemberAccess(analyzer, nameToken) { return undefined; }
 
 	});
 
@@ -1086,7 +1092,7 @@ function defineJavascriptTrees(Compiler) {
 
 		isFunction() { return undefined; }
 
-		resolveMemberAccess() { return undefined; }
+		resolveMemberAccess(analyzer, nameToken) { return undefined; }
 
 	});
 
@@ -1240,10 +1246,16 @@ function defineJavascriptTrees(Compiler) {
 		}
 
 		buildScope(analyzer, parentScope, classTree) {
-			if(classTree.members.has(this.nameToken.text))
-				analyzer.newDiagnostic(this.nameToken, "redefinition of '"+this.nameToken.text+"'");
+			if(this.staticToken===undefined)
+				if(classTree.members.has(this.nameToken.text))
+					analyzer.newDiagnostic(this.nameToken, "redefinition of '"+this.nameToken.text+"'");
+				else
+					classTree.members.set(this.nameToken.text, this);
 			else
-				classTree.members.set(this.nameToken.text, this.nameToken);
+				if(classTree.statics.has(this.nameToken.text))
+					analyzer.newDiagnostic(this.nameToken, "redefinition of static '"+this.nameToken.text+"'");
+				else
+					classTree.statics.set(this.nameToken.text, this);
 			this.parameters=this.parametersTree.buildParameters(analyzer);
 			this.vars=new Map();
 			this.vars.set("arguments", new Compiler.Javascript.Element.Declaration.Arguments());
@@ -1265,6 +1277,18 @@ function defineJavascriptTrees(Compiler) {
 			this.parametersTree.generate(generator);
 			this.blockTree.generate(generator);
 		}
+
+		/* *** semantic part. *** */
+
+		isAssignable() { return false; }
+
+		isClass() { return false; }
+
+		getFunction() { return this; }
+
+		isFunction() { return true; }
+
+		resolveMemberAccess(analyzer, nameToken) { return undefined; }
 
 	});
 
@@ -1728,7 +1752,7 @@ function defineJavascriptTrees(Compiler) {
 
 		isFunction() { return undefined; }
 
-		resolveMemberAccess(nameToken) { return undefined; }
+		resolveMemberAccess(analyzer, nameToken) { return undefined; }
 
 	});
 

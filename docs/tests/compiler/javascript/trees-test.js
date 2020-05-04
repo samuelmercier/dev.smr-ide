@@ -1435,6 +1435,47 @@
 		Assertions.assertEqual(tree.statementTree.statementTrees[0].statementTrees[0].statementTree, tree);
 	});
 
+	Tests.run(function testClassMembersRegistration() {
+		const tree=parseSingleStatement("class C {\n"
+			+"f() {}\n"
+			+"static f() {}\n"
+		+"}").classTree;
+
+		Assertions.assertEqual(tree.members.size, 1);
+		Assertions.assertEqual(tree.members.get("f"), tree.memberTrees[0]);
+		Assertions.assertEqual(tree.statics.size, 1);
+		Assertions.assertEqual(tree.statics.get("f"), tree.memberTrees[1]);
+
+
+		parseSingleStatementWithDiagnostics("class C {\n"
+			+"f() {}\n"
+			+"f() {}\n"
+		+"}")
+		.assertDiagnostic(17, 18, "redefinition of 'f'")
+		.assertNoMoreDiagnostic();
+
+
+		parseSingleStatementWithDiagnostics("class C {\n"
+			+"static f() {}\n"
+			+"static f() {}\n"
+		+"}")
+		.assertDiagnostic(31, 32, "redefinition of static 'f'")
+		.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testClassMembersResolution() {
+		const tree=parseSingleStatement("{ class C { static f() {} } C.f(); }");
+		Assertions.assertEqual(tree.statementTrees[1].expressionTree.operand, tree.statementTrees[0].classTree.statics.get("f"));
+
+		parseSingleStatementWithDiagnostics("{ class C {} C.f(); }")
+		.assertDiagnostic(15, 16, "cannot resolve 'f'")
+		.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("(class C {}.f());")
+		.assertDiagnostic(12, 13, "cannot resolve 'f'")
+		.assertNoMoreDiagnostic();
+	});
+
 	Tests.run(function testResolutions() {
 		const result=Compiler.parseJavascript("sourceId", [
 			"function f(arg) {",
@@ -1778,6 +1819,7 @@
 			.assertNoMoreDiagnostic();
 
 		parseSingleStatementWithDiagnostics("(class {}).member;")
+			.assertDiagnostic(11, 17, "cannot resolve 'member'")
 			.assertNoMoreDiagnostic();
 
 		parseSingleStatementWithDiagnostics("(function() {}).member;")
@@ -1829,6 +1871,7 @@
 			.assertNoMoreDiagnostic();
 
 		parseSingleStatementWithDiagnostics("{ class C {} C.member; }")
+			.assertDiagnostic(15, 21, "cannot resolve 'member'")
 			.assertNoMoreDiagnostic();
 
 		// FIXME: add ternary
