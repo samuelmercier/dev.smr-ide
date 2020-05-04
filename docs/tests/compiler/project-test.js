@@ -24,7 +24,7 @@
 		Assertions.assertEqual(project.styles().size(), 0);
 
 		Assertions.assertEqual(storage.items.size, 1);
-		Assertions.assertEqual(storage.items.get("b1295ad4-1e00-4f77-8e40-f24875ec4557"), JSON.stringify({scripts:[],styles:[]}));
+		Assertions.assertEqual(storage.items.get("b1295ad4-1e00-4f77-8e40-f24875ec4557"), JSON.stringify({}));
 	});
 
 	Tests.run(function testFetchLibrary() {

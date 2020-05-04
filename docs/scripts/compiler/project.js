@@ -70,19 +70,22 @@ const Project=function() {
 		let projectScope;
 
 		if(localStorage.getItem(projectId)===null)
-			localStorage.setItem(projectId, JSON.stringify({scripts:[],styles:[]}));
-		else {
-			const definition=JSON.parse(localStorage.getItem(projectId));
+			localStorage.setItem(projectId, JSON.stringify({}));
+		const definition=JSON.parse(localStorage.getItem(projectId));
+		if(definition.libraries!==undefined)
 			for(const library of definition.libraries)
 				newLibrary(library.id, library.name, library.url, localStorage.getItem(library.id));
+		analyzeLibraries();
+		if(definition.scripts!==undefined)
 			for(const script of definition.scripts)
 				newScript(script.id, script.name, localStorage.getItem(script.id));
+		if(definition.styles!==undefined)
 			for(const style of definition.styles)
 				newStyle(style.id, style.name, localStorage.getItem(style.id));
+		if(definition.tests!==undefined)
 			for(const test of definition.tests)
 				newTest(test.id, test.name, localStorage.getItem(test.id));
-		}
-		analyzeLibraries();
+		analyzeProject();
 
 		return Object.freeze({
 
@@ -133,6 +136,7 @@ const Project=function() {
 					localStorage.setItem(library.id(), descriptor.content);
 					saveProject();
 					analyzeLibraries();
+					analyzeProject();
 					onsuccess(library);
 				}, onerror);
 			},
@@ -169,10 +173,7 @@ const Project=function() {
 
 		});
 
-		function analyzeLibraries() {
-			librariesScope=Compiler.analyzeJavascript(undefined, libraries.map(library=>library.tree()));
-			analyzeProject();
-		}
+		function analyzeLibraries() { librariesScope=Compiler.analyzeJavascript(undefined, libraries.map(library=>library.tree())); }
 
 		function analyzeProject() {
 			const result=[];
@@ -204,12 +205,13 @@ const Project=function() {
 					saveProject();
 					localStorage.removeItem(id);
 					analyzeLibraries();
+					analyzeProject();
 				},
 				name:function() { return name; },
 				url:function() { return url; },
 				tree:function() { return tree; },
 			});
-			let tree=Compiler.parseJavascript(library, content);
+			let tree=Compiler.parseJavascript(library, content).buildScope(Compiler.Javascript.Scope.Empty);
 			libraries.set(library);
 			return library;
 		}
@@ -238,7 +240,7 @@ const Project=function() {
 					if(value!==content) {
 						localStorage.setItem(id, value);
 						content=value;
-						tree=Compiler.parseJavascript(script, content);
+						tree=Compiler.parseJavascript(script, content).buildScope(librariesScope);
 						analyzeProject();
 						for(const listener of onscriptchange)
 							listener(script);
@@ -246,7 +248,7 @@ const Project=function() {
 				},
 				tree:function() { return tree; }
 			});
-			let tree=Compiler.parseJavascript(script, content);
+			let tree=Compiler.parseJavascript(script, content).buildScope(librariesScope);
 			scripts.set(script);
 			return script;
 		}
@@ -305,13 +307,13 @@ const Project=function() {
 					if(value!==content) {
 						localStorage.setItem(id, value);
 						content=value;
-						tree=Compiler.parseJavascript(test, content);
+						tree=Compiler.parseJavascript(test, content).buildScope(projectScope);
 						analyzeProject();
 					}
 				},
 				tree:function() { return tree; }
 			});
-			let tree=Compiler.parseJavascript(test, content);
+			let tree=Compiler.parseJavascript(test, content).buildScope(projectScope);
 			tests.set(test);
 			return test;
 		}

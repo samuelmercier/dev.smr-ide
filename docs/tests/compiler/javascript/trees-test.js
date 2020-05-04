@@ -1256,14 +1256,14 @@
 (function testAnalyze() {
 
 	function parseSingleStatement(input) {
-		const result=Compiler.parseJavascript("sourceId", input);
+		const result=Compiler.parseJavascript("sourceId", input).buildScope(Compiler.Javascript.Scope.Empty);
 		assertDiagnostics(result).assertNoMoreDiagnostic();
 		Assertions.assertEqual(result.statementTrees.length, 1);
 		return result.statementTrees[0];
 	}
 
 	function parseSingleStatementWithDiagnostics(input) {
-		const result=Compiler.parseJavascript("sourceId", input);
+		const result=Compiler.parseJavascript("sourceId", input).buildScope(Compiler.Javascript.Scope.Empty);
 		Assertions.assertEqual(result.statementTrees.length, 1);
 		return assertDiagnostics(result);
 	}
@@ -1293,7 +1293,7 @@
 	Tests.run(function testAnalyzeLabelDuplicateLabelMustFail() {
 
 		function assertDuplicateLabelMustFail(offsetStart, offsetEnd, input) {
-			const result=Compiler.parseJavascript("sourceId", input);
+			const result=Compiler.parseJavascript("sourceId", input).buildScope(Compiler.Javascript.Scope.Empty);
 			assertDiagnostics(result)
 				.assertDiagnostic(offsetStart, offsetEnd, "redefinition of label 'label'")
 				.assertNoMoreDiagnostic();
@@ -1443,7 +1443,7 @@
 				"{ arg, let1, var1; }",
 				"unresolved;",
 			"}"
-		].join("\n"));
+		].join("\n")).buildScope(Compiler.Javascript.Scope.Empty);
 		assertDiagnostics(result).assertNoMoreDiagnostic();
 		Assertions.assertEqual(result.statementTrees.length, 1);
 
@@ -1467,20 +1467,12 @@
 	});
 
 	Tests.run(function testArgumentsResolutionInMethod() {
-		const result=Compiler.parseJavascript("sourceId", "class Class { constructor() { arguments; } }");
-		assertDiagnostics(result).assertNoMoreDiagnostic();
-		Assertions.assertEqual(result.statementTrees.length, 1);
-
-		const constructorTree=result.statementTrees[0].classTree.memberTrees[0];
+		const constructorTree=parseSingleStatement("class Class { constructor() { arguments; } }").classTree.memberTrees[0];
 		Assertions.assertEqual(constructorTree.blockTree.statementTrees[0].expressionTree.declaration, constructorTree.vars.get("arguments"));
 	});
 
 	Tests.run(function testSuperResolutionInClass() {
-		const result=Compiler.parseJavascript("sourceId", "class Class { constructor() { super; } }");
-		assertDiagnostics(result).assertNoMoreDiagnostic();
-		Assertions.assertEqual(result.statementTrees.length, 1);
-
-		const constructorTree=result.statementTrees[0].classTree.memberTrees[0];
+		const constructorTree=parseSingleStatement("class Class { constructor() { super; } }").classTree.memberTrees[0];
 		Assertions.assertEqual(constructorTree.blockTree.statementTrees[0].expressionTree.declaration, constructorTree.vars.get("super"));
 	});
 
@@ -1513,7 +1505,7 @@
 (function testAnalyzeExpression() {
 
 	function parseSingleStatementWithDiagnostics(input) {
-		const result=Compiler.parseJavascript("sourceId", input);
+		const result=Compiler.parseJavascript("sourceId", input).buildScope(Compiler.Javascript.Scope.Empty);
 		Assertions.assertEqual(result.statementTrees.length, 1);
 		return assertDiagnostics(result);
 	}

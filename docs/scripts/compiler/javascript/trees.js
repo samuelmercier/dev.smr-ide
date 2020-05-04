@@ -1287,13 +1287,14 @@ function defineJavascriptTrees(Compiler) {
 
 		kind() { return "source"; }
 
-		buildScope() {
+		buildScope(parentScope) {
 			this.references=[];
-			const scope=new Scope.Source(Scope.Empty, this);
+			const scope=new Scope.Source(parentScope, this);
 			for(const statementTree of this.statementTrees)
 				statementTree.buildScope(scope, scope);
 			for(const statementTree of this.statementTrees)
 				statementTree.resolve(scope);
+			return Object.freeze(this);
 		}
 
 		generate(generator) {

@@ -169,18 +169,18 @@ const Compiler=function() {
 		for(const sourceTree of sourceTrees)
 			for(const tree of sourceTree.references) {
 				const nameToken=tree.nameToken;
-				if(declarations.get(nameToken.text)===undefined&&(scope===undefined||scope.resolve(nameToken.text)===undefined))
+				if(declarations.get(nameToken.text)===undefined&&(scope===undefined||scope.resolveScopeAccess(nameToken.text)===undefined))
 					newDiagnostic(nameToken, "cannot resolve '"+nameToken.text+"'");
 			}
 		return Object.freeze({
 			declarations:declarations,
 			diagnostics:diagnostics,
 			sourceTrees:sourceTrees,
-			resolve:function(name) {
+			resolveScopeAccess:function(name) {
 				const result=this.declarations.get(name);
 				if(result!==undefined)
 					return result;
-				return scope!==undefined ? scope.resolve(name) : undefined;
+				return scope!==undefined ? scope.resolveScopeAccess(name) : undefined;
 			}
 		});
 	});

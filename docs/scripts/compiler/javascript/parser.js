@@ -158,8 +158,7 @@ function defineJavascriptParser(Compiler) {
 				throw e;
 			diagnostics.push(e.diagnostic);
 		}
-		source.buildScope();
-		return Object.freeze(source);
+		return source;
 
 		/*** helper functions. *** */
 

@@ -12,7 +12,7 @@
 	}
 
 	function parseSingleStatement(kind, input) {
-		const result=Compiler.parseJavascript("sourceId", input);
+		const result=Compiler.parseJavascript("sourceId", input).buildScope(Compiler.Javascript.Scope.Empty);
 		assertDiagnostics(result).assertNoMoreDiagnostic();
 		Assertions.assertEqual(result.statementTrees.length, 1);
 		Assertions.assertEqual(result.statementTrees[0].kind(), kind);
@@ -20,7 +20,7 @@
 	}
 
 	function parseSingleStatementIgnoreDiagnostics(kind, input) {
-		const result=Compiler.parseJavascript("sourceId", input);
+		const result=Compiler.parseJavascript("sourceId", input).buildScope(Compiler.Javascript.Scope.Empty);
 		Assertions.assertEqual(result.statementTrees.length, 1);
 		Assertions.assertEqual(result.statementTrees[0].kind(), kind);
 		return result.statementTrees[0];
