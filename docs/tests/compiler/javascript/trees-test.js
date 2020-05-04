@@ -1559,8 +1559,25 @@
 			.assertDiagnostic(12, 13, "left operand is not assignable")
 			.assertNoMoreDiagnostic();
 
+		parseSingleStatementWithDiagnostics("for(const a of {}) a=0;")
+			.assertDiagnostic(20, 21, "left operand is not assignable")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("for(let a of {}) a=0;")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("for(var a of {}) a=0;")
+			.assertNoMoreDiagnostic();
+
 		parseSingleStatementWithDiagnostics("{ function f() {} f=0; }")
 			.assertDiagnostic(19, 20, "left operand is not assignable")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ const f=0; f=0; }")
+			.assertDiagnostic(14, 15, "left operand is not assignable")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ let f; f=0; }")
 			.assertNoMoreDiagnostic();
 
 		parseSingleStatementWithDiagnostics("{ var f; f=0; }")
@@ -1636,8 +1653,23 @@
 			.assertDiagnostic(5, 6, "cannot invoke operand")
 			.assertNoMoreDiagnostic();
 
+		parseSingleStatementWithDiagnostics("for(const a of {}) a();")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("for(let a of {}) a();")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("for(var a of {}) a();")
+			.assertNoMoreDiagnostic();
+
 		parseSingleStatementWithDiagnostics("{ function f() {} f(0); }")
 			.assertDiagnostic(19, 20, "expected at most 0 argument(s); got 1")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ const f=0; f(0); }")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ let f; f(0); }")
 			.assertNoMoreDiagnostic();
 
 		parseSingleStatementWithDiagnostics("{ var f; f(0); }")
@@ -1697,8 +1729,25 @@
 			.assertDiagnostic(14, 16, "invalid increment/decrement operand")
 			.assertNoMoreDiagnostic();
 
+		parseSingleStatementWithDiagnostics("for(const a of {}) a++;")
+			.assertDiagnostic(20, 22, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("for(let a of {}) a++;")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("for(var a of {}) a++;")
+			.assertNoMoreDiagnostic();
+
 		parseSingleStatementWithDiagnostics("{ function f() {} f++; }")
 			.assertDiagnostic(19, 21, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ const f=0; f++; }")
+			.assertDiagnostic(14, 16, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ let f; f++; }")
 			.assertNoMoreDiagnostic();
 
 		parseSingleStatementWithDiagnostics("{ var f; f++; }")
@@ -1758,8 +1807,25 @@
 			.assertDiagnostic(9, 11, "invalid increment/decrement operand")
 			.assertNoMoreDiagnostic();
 
+		parseSingleStatementWithDiagnostics("for(const a of {}) --a;")
+			.assertDiagnostic(19, 21, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("for(let a of {}) --a;")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("for(var a of {}) --a;")
+			.assertNoMoreDiagnostic();
+
 		parseSingleStatementWithDiagnostics("{ function f() {} --f; }")
 			.assertDiagnostic(18, 20, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ const f=0; --f; }")
+			.assertDiagnostic(13, 15, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ let f; --f; }")
 			.assertNoMoreDiagnostic();
 
 		parseSingleStatementWithDiagnostics("{ var f; --f; }")
@@ -1819,8 +1885,25 @@
 			.assertDiagnostic(9, 11, "invalid increment/decrement operand")
 			.assertNoMoreDiagnostic();
 
+		parseSingleStatementWithDiagnostics("for(const a of {}) ++a;")
+			.assertDiagnostic(19, 21, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("for(let a of {}) ++a;")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("for(var a of {}) ++a;")
+			.assertNoMoreDiagnostic();
+
 		parseSingleStatementWithDiagnostics("{ function f() {} ++f; }")
 			.assertDiagnostic(18, 20, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ const f=0; ++f; }")
+			.assertDiagnostic(13, 15, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ let f; ++f; }")
 			.assertNoMoreDiagnostic();
 
 		parseSingleStatementWithDiagnostics("{ var f; ++f; }")

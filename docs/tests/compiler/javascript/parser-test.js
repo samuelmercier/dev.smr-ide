@@ -59,7 +59,7 @@
 	}
 
 	Tests.run(function testParseDeclaration() {
-		const tree=parseSingleStatement("var", "var a, b=expression;");
+		const tree=parseSingleStatement("variables", "var a, b=expression;");
 		assertKeyword(tree.keywordToken, "var");
 
 		Assertions.assertEqual(tree.declaratorTrees.length, 2);
@@ -560,9 +560,9 @@
 		Assertions.assertUndefined(parseSingleStatement("for", "for(initializer; ; increment) statement;").conditionTree);
 		Assertions.assertUndefined(parseSingleStatement("for", "for(initializer; condition; ) statement;").incrementTree);
 
-		Assertions.assertEqual(parseSingleStatement("for", "for(const a; condition; increment) statement;").initializerTree.kind(), "var");
-		Assertions.assertEqual(parseSingleStatement("for", "for(let a; condition; increment) statement;").initializerTree.kind(), "var");
-		Assertions.assertEqual(parseSingleStatement("for", "for(var a; condition; increment) statement;").initializerTree.kind(), "var");
+		Assertions.assertEqual(parseSingleStatement("for", "for(const a; condition; increment) statement;").initializerTree.kind(), "variables");
+		Assertions.assertEqual(parseSingleStatement("for", "for(let a; condition; increment) statement;").initializerTree.kind(), "variables");
+		Assertions.assertEqual(parseSingleStatement("for", "for(var a; condition; increment) statement;").initializerTree.kind(), "variables");
 	});
 
 	Tests.run(function testParseStatementFunction() {

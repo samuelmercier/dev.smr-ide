@@ -161,7 +161,7 @@ function defineJavascriptTrees(Compiler) {
 
 	}),
 
-	Trees.Declarator=Object.freeze(class Declarator {
+	Trees.Declarator=class Declarator {
 
 		constructor(precedingCommaToken, nameToken, initializerTree) {
 			this.precedingCommaToken=precedingCommaToken;
@@ -169,14 +169,71 @@ function defineJavascriptTrees(Compiler) {
 			this.initializerTree=initializerTree;
 		}
 
+	};
+
+	Trees.Declarator.Const=Object.freeze(class Const extends Trees.Declarator {
+
+		constructor(precedingCommaToken, nameToken, initializerTree) {
+			super(precedingCommaToken, nameToken, initializerTree);
+		}
+
+		buildScope(analyzer, parentScope) {
+			parentScope.registerDeclaration(declaratorTree.nameToken, declaratorTree);
+			if(this.initializerTree===undefined)
+				analyzer.newDiagnostic(this.nameToken, "missing initializer");
+			else
+				declaratorTree.initializerTree.expressionTree.buildScope(analyzer, parentScope);
+		}
+
 		/* *** semantic part. *** */
 
-		// FIXME: false for 'const'
+		isAssignable() { return false; }
+
+		isFunction() { return undefined; }
+
+	});
+
+	Trees.Declarator.Let=Object.freeze(class Let extends Trees.Declarator {
+
+		constructor(precedingCommaToken, nameToken, initializerTree) {
+			super(precedingCommaToken, nameToken, initializerTree);
+		}
+
+		buildScope(analyzer, parentScope) {
+			parentScope.registerDeclaration(declaratorTree.nameToken, declaratorTree);
+			if(this.initializerTree!==undefined)
+				declaratorTree.initializerTree.expressionTree.buildScope(analyzer, parentScope);
+		}
+
+		/* *** semantic part. *** */
+
 		isAssignable() { return true; }
 
 		isFunction() { return undefined; }
 
 	});
+
+	Trees.Declarator.Var=Object.freeze(class Var extends Trees.Declarator {
+
+		constructor(precedingCommaToken, nameToken, initializerTree) {
+			super(precedingCommaToken, nameToken, initializerTree);
+		}
+
+		buildScope(analyzer, parentScope) {
+			parentScope.registerVar(declaratorTree.nameToken, declaratorTree);
+			if(this.initializerTree!==undefined)
+				declaratorTree.initializerTree.expressionTree.buildScope(analyzer, parentScope);
+		}
+
+		/* *** semantic part. *** */
+
+		isAssignable() { return true; }
+
+		isFunction() { return undefined; }
+
+	});
+
+	Object.freeze(Trees.Declarator);
 
 	Trees.Empty=Object.freeze(class Empty {
 
@@ -1588,11 +1645,11 @@ function defineJavascriptTrees(Compiler) {
 			if(this.declarationKeywordToken!==undefined)
 				switch(this.declarationKeywordToken.text) {
 				case "var":
-					parentScope.registerVar(this.nameToken, this.nameToken);
+					parentScope.registerVar(this.nameToken, this);
 					break;
 				case "const":
 				case "let":
-					this.declaration=this.nameToken;
+					this.declaration=this;
 					break;
 				}
 			const scope=new Scope.ForEach(parentScope, this);
@@ -1619,6 +1676,10 @@ function defineJavascriptTrees(Compiler) {
 			generator.generate(this.closeParenthesisToken);
 			this.statementTree.generate(generator);
 		}
+
+		isAssignable() { return this.declarationKeywordToken.text!=="const"; }
+
+		isFunction() { return undefined; }
 
 	});
 
@@ -2047,7 +2108,7 @@ function defineJavascriptTrees(Compiler) {
 
 	});
 
-	Trees.Var=Object.freeze(class Var {
+	Trees.Variables=Object.freeze(class Variables {
 
 		constructor(annotationsTree, keywordToken, declaratorTrees, semicolonToken) {
 			this.annotationsTree=annotationsTree;
@@ -2057,7 +2118,7 @@ function defineJavascriptTrees(Compiler) {
 			Object.freeze(this);
 		}
 
-		kind() { return "var"; }
+		kind() { return "variables"; }
 
 		buildScope(analyzer, parentScope) {
 			for(const declaratorTree of this.declaratorTrees) {

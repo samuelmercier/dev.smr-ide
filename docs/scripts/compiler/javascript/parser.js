@@ -463,12 +463,28 @@ function defineJavascriptParser(Compiler) {
 			}
 		}
 
-		function parseDeclarators(nameToken) {
+		function parseConstDeclarators(annotationsTree, keywordToken, nameToken) {
 			const result=[];
-			result.push(new Compiler.JavascriptTrees.Declarator(undefined, nameToken, parseDeclaratorInitializer()));
+			result.push(new Compiler.JavascriptTrees.Declarator.Const(undefined, nameToken, parseDeclaratorInitializer()));
 			for(let precedingCommaToken; (precedingCommaToken=checkPunctuator(","))!==undefined; )
-				result.push(new Compiler.JavascriptTrees.Declarator(precedingCommaToken, expectIdentifier(), parseDeclaratorInitializer()));
-			return result;
+				result.push(new Compiler.JavascriptTrees.Declarator.Const(precedingCommaToken, expectIdentifier(), parseDeclaratorInitializer()));
+			return new Compiler.JavascriptTrees.Variables(annotationsTree, keywordToken, Object.freeze(result), expectPunctuator(";"))
+		}
+
+		function parseLetDeclarators(annotationsTree, keywordToken, nameToken) {
+			const result=[];
+			result.push(new Compiler.JavascriptTrees.Declarator.Let(undefined, nameToken, parseDeclaratorInitializer()));
+			for(let precedingCommaToken; (precedingCommaToken=checkPunctuator(","))!==undefined; )
+				result.push(new Compiler.JavascriptTrees.Declarator.Let(precedingCommaToken, expectIdentifier(), parseDeclaratorInitializer()));
+			return new Compiler.JavascriptTrees.Variables(annotationsTree, keywordToken, Object.freeze(result), expectPunctuator(";"))
+		}
+
+		function parseVarDeclarators(annotationsTree, keywordToken, nameToken) {
+			const result=[];
+			result.push(new Compiler.JavascriptTrees.Declarator.Var(undefined, nameToken, parseDeclaratorInitializer()));
+			for(let precedingCommaToken; (precedingCommaToken=checkPunctuator(","))!==undefined; )
+				result.push(new Compiler.JavascriptTrees.Declarator.Var(precedingCommaToken, expectIdentifier(), parseDeclaratorInitializer()));
+			return new Compiler.JavascriptTrees.Variables(annotationsTree, keywordToken, Object.freeze(result), expectPunctuator(";"))
 		}
 
 		function parseDeclaratorInitializer() {
@@ -947,12 +963,29 @@ function defineJavascriptParser(Compiler) {
 						expectPunctuator(")"),
 						parseStatement()
 					);
-				return parseStatementFor(
-					labelTrees,
-					forToken,
-					openParenthesisToken,
-					new Compiler.JavascriptTrees.Var(undefined, token, parseDeclarators(nameToken), expectPunctuator(";"))
-				);
+				switch(token.text) {
+				case "const":
+					return parseStatementFor(
+						labelTrees,
+						forToken,
+						openParenthesisToken,
+						parseConstDeclarators(undefined, token, nameToken)
+					);
+				case "let":
+					return parseStatementFor(
+						labelTrees,
+						forToken,
+						openParenthesisToken,
+						parseLetDeclarators(undefined, token, nameToken)
+					);
+				case "var":
+					return parseStatementFor(
+						labelTrees,
+						forToken,
+						openParenthesisToken,
+						parseVarDeclarators(undefined, token, nameToken)
+					);
+				}
 			}
 			const identifierToken=checkIdentifier();
 			if((token=checkKeywords(inOrOfKeywords))!==undefined)
@@ -1008,7 +1041,7 @@ function defineJavascriptParser(Compiler) {
 						expectPunctuator("}")
 					);
 				case "const":
-					return new Compiler.JavascriptTrees.Var(annotationsTree, token, parseDeclarators(expectIdentifier()), expectPunctuator(";"));
+					return parseConstDeclarators(annotationsTree, token, expectIdentifier());
 				case "function":
 					return new Compiler.JavascriptTrees.Statement.Function(
 						annotationsTree,
@@ -1018,9 +1051,9 @@ function defineJavascriptParser(Compiler) {
 						parseBlock(undefined, expectPunctuator("{"))
 					);
 				case "let":
-					return new Compiler.JavascriptTrees.Var(annotationsTree, token, parseDeclarators(expectIdentifier()), expectPunctuator(";"));
+					return parseLetDeclarators(annotationsTree, token, expectIdentifier());
 				case "var":
-					return new Compiler.JavascriptTrees.Var(annotationsTree, token, parseDeclarators(expectIdentifier()), expectPunctuator(";"));
+					return parseVarDeclarators(annotationsTree, token, expectIdentifier());
 				}
 			return parseStatement();
 		}
