@@ -153,7 +153,30 @@ function defineJavascriptTrees(Compiler) {
 
 		resolveDeclaration(name) { return this.scope.resolveDeclaration(name); }
 
+		/* *** semantic part. *** */
+
+		isAssignable() { return false; }
+
+		isFunction() { return false; }
+
 	}),
+
+	Trees.Declarator=Object.freeze(class Declarator {
+
+		constructor(precedingCommaToken, nameToken, initializerTree) {
+			this.precedingCommaToken=precedingCommaToken;
+			this.nameToken=nameToken;
+			this.initializerTree=initializerTree;
+		}
+
+		/* *** semantic part. *** */
+
+		// FIXME: false for 'const'
+		isAssignable() { return true; }
+
+		isFunction() { return undefined; }
+
+	});
 
 	Trees.Empty=Object.freeze(class Empty {
 
@@ -501,8 +524,8 @@ function defineJavascriptTrees(Compiler) {
 		buildScope(analyzer, parentScope) {
 			this.parameters=this.parametersTree.buildParameters(analyzer);
 			this.vars=new Map();
-			this.vars.set("arguments", this);
-			this.vars.set("this", this);
+			this.vars.set("arguments", new Compiler.Javascript.Element.Declaration.Arguments());
+			this.vars.set("this", Compiler.Javascript.Element.Declaration.Invalid);
 			this.bodyTree.buildScope(analyzer, new Scope.Function(parentScope, this));
 			Object.freeze(this);
 		}
@@ -854,6 +877,7 @@ function defineJavascriptTrees(Compiler) {
 			if(this.declaration===undefined)
 				analyzer.registerScopeAccess(this);
 			Object.freeze(this);
+			return this.declaration;
 		}
 
 		generate(generator) { generator.generate(this.nameToken); }
@@ -923,7 +947,7 @@ function defineJavascriptTrees(Compiler) {
 		buildScope(analyzer, parentScope) {
 			this.parameters=this.parametersTree.buildParameters(analyzer);
 			this.vars=new Map();
-			this.vars.set("arguments", this.functionToken); // FIXME:
+			this.vars.set("arguments", new Compiler.Javascript.Element.Declaration.Arguments());
 			this.blockTree.buildScope(analyzer, new Scope.Function(parentScope, this));
 			Object.freeze(this);
 		}
@@ -937,6 +961,30 @@ function defineJavascriptTrees(Compiler) {
 			this.parametersTree.generate(generator);
 			this.blockTree.generate(generator);
 		}
+
+		/* *** semantic part. *** */
+
+		isAssignable() { return false; }
+
+		getFunction() { return this; }
+
+		isFunction() { return true; }
+
+	});
+
+	Trees.FunctionParameter=Object.freeze(class FunctionParameter {
+
+		constructor(precedingCommaToken, annotationTrees, nameToken) {
+			this.precedingCommaToken=precedingCommaToken;
+			this.annotationTrees=annotationTrees;
+			this.nameToken=nameToken;
+		}
+
+		/* *** semantic part. *** */
+
+		isAssignable() { return true; }
+
+		isFunction() { return undefined; }
 
 	});
 
@@ -1096,10 +1144,10 @@ function defineJavascriptTrees(Compiler) {
 				classTree.members.set(this.nameToken.text, this.nameToken);
 			this.parameters=this.parametersTree.buildParameters(analyzer);
 			this.vars=new Map();
-			this.vars.set("arguments", this.nameToken); // FIXME:
-			this.vars.set("super", this.nameToken); // FIXME:
-			this.vars.set("this", this.nameToken); // FIXME:
-			this.vars.set(this.nameToken.text, this.nameToken); // FIXME:
+			this.vars.set("arguments", new Compiler.Javascript.Element.Declaration.Arguments());
+			this.vars.set("super", Compiler.Javascript.Element.Declaration.Invalid);
+			this.vars.set("this", Compiler.Javascript.Element.Declaration.Invalid);
+			this.vars.set(this.nameToken.text, this);
 			this.blockTree.buildScope(analyzer, new Scope.Function(parentScope, this));
 			Object.freeze(this);
 		}
@@ -1308,7 +1356,7 @@ function defineJavascriptTrees(Compiler) {
 		kind() { return "class"; }
 
 		buildScope(analyzer, parentScope) {
-			parentScope.registerDeclaration(this.classTree.nameToken, this.classTree.nameToken);
+			parentScope.registerDeclaration(this.classTree.nameToken, this.classTree);
 			this.classTree.buildScope(analyzer, parentScope);
 		}
 
@@ -1584,7 +1632,7 @@ function defineJavascriptTrees(Compiler) {
 		kind() { return "function"; }
 
 		buildScope(analyzer, parentScope) {
-			parentScope.registerDeclaration(this.functionTree.nameToken, this.functionTree.nameToken);
+			parentScope.registerDeclaration(this.functionTree.nameToken, this.functionTree);
 			this.functionTree.buildScope(analyzer, parentScope);
 		}
 
@@ -2014,13 +2062,13 @@ function defineJavascriptTrees(Compiler) {
 			for(const declaratorTree of this.declaratorTrees) {
 				switch(this.keywordToken.text) {
 				case "const":
-					parentScope.registerDeclaration(declaratorTree.nameToken, declaratorTree.nameToken);
+					parentScope.registerDeclaration(declaratorTree.nameToken, declaratorTree);
 					break;
 				case "let":
-					parentScope.registerDeclaration(declaratorTree.nameToken, declaratorTree.nameToken);
+					parentScope.registerDeclaration(declaratorTree.nameToken, declaratorTree);
 					break;
 				case "var":
-					parentScope.registerVar(declaratorTree.nameToken, declaratorTree.nameToken);
+					parentScope.registerVar(declaratorTree.nameToken, declaratorTree);
 					break;
 				default:
 					analyzer.newDiagnostic(this.keywordToken, "internal error: invalid keyword '"+this.keywordToken.text+"'");

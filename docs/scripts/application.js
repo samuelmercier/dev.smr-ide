@@ -638,9 +638,10 @@ function newWorkbench(project) {
 		items.get(script)
 			.setText(script.name())
 			.getItems().refresh(Array.from(script.tree().declarations.entries()).sort((a, b)=>a[0].localeCompare(b[0])), function(entry, item) {
+				const token=entry[1].nameToken;
 				item
 					.setText(entry[0])
-					.onclick(function(event) { selectResource(script, entry[1].offset, entry[1].offset+entry[1].text.length); });
+					.onclick(function(event) { selectResource(script, token.offset, token.offset+token.text.length); });
 			});
 	});
 	project.onstylechange().push(function(style) { items.get(style).setText(style.name()); });

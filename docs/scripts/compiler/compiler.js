@@ -162,7 +162,7 @@ const Compiler=function() {
 			diagnostics.push(...sourceTree.diagnostics);
 			for(const declaration of sourceTree.declarations.entries())
 				if(declarations.has(declaration[0])||scope!==undefined&&scope.declarations.has(declaration[0]))
-					newDiagnostic(declaration[1], "redefinition of '"+declaration[0]+"'");
+					newDiagnostic(declaration[1].nameToken, "redefinition of '"+declaration[0]+"'");
 				else
 					declarations.set(declaration[0], declaration[1]);
 		}

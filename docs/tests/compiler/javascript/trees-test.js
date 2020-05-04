@@ -1472,8 +1472,7 @@
 		Assertions.assertEqual(result.statementTrees.length, 1);
 
 		const constructorTree=result.statementTrees[0].classTree.memberTrees[0];
-		// FIXME: currently arguments resolves to the method name token, which is wrong.
-		Assertions.assertEqual(constructorTree.blockTree.statementTrees[0].expressionTree.declaration, constructorTree.nameToken);
+		Assertions.assertEqual(constructorTree.blockTree.statementTrees[0].expressionTree.declaration, constructorTree.vars.get("arguments"));
 	});
 
 	Tests.run(function testSuperResolutionInClass() {
@@ -1482,8 +1481,7 @@
 		Assertions.assertEqual(result.statementTrees.length, 1);
 
 		const constructorTree=result.statementTrees[0].classTree.memberTrees[0];
-		// FIXME: currently super resolves to the method name token, which is wrong.
-		Assertions.assertEqual(constructorTree.blockTree.statementTrees[0].expressionTree.declaration, constructorTree.nameToken);
+		Assertions.assertEqual(constructorTree.blockTree.statementTrees[0].expressionTree.declaration, constructorTree.vars.get("super"));
 	});
 
 	Tests.run(function testAnalyzeRegisterVar() {
@@ -1569,7 +1567,20 @@
 			.assertDiagnostic(12, 13, "left operand is not assignable")
 			.assertNoMoreDiagnostic();
 
-		// FIXME: add scope-access
+		parseSingleStatementWithDiagnostics("{ function f() {} f=0; }")
+			.assertDiagnostic(19, 20, "left operand is not assignable")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ var f; f=0; }")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("function f() { arguments=0; }")
+			.assertDiagnostic(24, 25, "left operand is not assignable")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ class C {} C=0; }")
+			.assertDiagnostic(14, 15, "left operand is not assignable")
+			.assertNoMoreDiagnostic();
 
 		// FIXME: add ternary
 	});
@@ -1633,7 +1644,20 @@
 			.assertDiagnostic(5, 6, "cannot invoke operand")
 			.assertNoMoreDiagnostic();
 
-		// FIXME: add scope-access
+		parseSingleStatementWithDiagnostics("{ function f() {} f(0); }")
+			.assertDiagnostic(19, 20, "expected at most 0 argument(s); got 1")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ var f; f(0); }")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("function f() { arguments(); }")
+			.assertDiagnostic(24, 25, "cannot invoke operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ class C {} C(0); }")
+			.assertDiagnostic(14, 15, "cannot invoke operand")
+			.assertNoMoreDiagnostic();
 
 		// FIXME: add ternary
 	});
@@ -1681,7 +1705,20 @@
 			.assertDiagnostic(14, 16, "invalid increment/decrement operand")
 			.assertNoMoreDiagnostic();
 
-		// FIXME: add scope-access
+		parseSingleStatementWithDiagnostics("{ function f() {} f++; }")
+			.assertDiagnostic(19, 21, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ var f; f++; }")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("function f() { arguments++; }")
+			.assertDiagnostic(24, 26, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ class C {} C++; }")
+			.assertDiagnostic(14, 16, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
 
 		// FIXME: add ternary
 	});
@@ -1729,7 +1766,20 @@
 			.assertDiagnostic(9, 11, "invalid increment/decrement operand")
 			.assertNoMoreDiagnostic();
 
-		// FIXME: add scope-access
+		parseSingleStatementWithDiagnostics("{ function f() {} --f; }")
+			.assertDiagnostic(18, 20, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ var f; --f; }")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("function f() { --arguments; }")
+			.assertDiagnostic(15, 17, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ class C {} --C; }")
+			.assertDiagnostic(13, 15, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
 
 		// FIXME: add ternary
 	});
@@ -1777,7 +1827,20 @@
 			.assertDiagnostic(9, 11, "invalid increment/decrement operand")
 			.assertNoMoreDiagnostic();
 
-		// FIXME: add scope-access
+		parseSingleStatementWithDiagnostics("{ function f() {} ++f; }")
+			.assertDiagnostic(18, 20, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ var f; ++f; }")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("function f() { ++arguments; }")
+			.assertDiagnostic(15, 17, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ class C {} ++C; }")
+			.assertDiagnostic(13, 15, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
 
 		// FIXME: add ternary
 	});

@@ -2,6 +2,46 @@
 
 function defineJavascript() {
 
+	function defineElement() {
+
+		const Element={};
+
+		Element.Declaration=class Declaration {
+
+			isAssignable() { return undefined; }
+
+			isFunction() { return undefined; }
+
+		};
+
+		Element.Declaration.Arguments=Object.freeze(class Arguments extends Element.Declaration {
+
+			constructor() { super(); }
+
+			isAssignable() { return false; }
+
+			isFunction() { return false; }
+
+			getName() { return "arguments"; }
+
+		});
+
+		Element.Declaration.Invalid=Object.freeze({
+
+			getName() { return "<invalid>"; },
+
+			isAssignable() { return undefined; },
+
+			isFunction() { return undefined; }
+
+		});
+
+		Object.freeze(Element.Declaration);
+
+		return Object.freeze(Element);
+
+	}
+
 	function defineScope() {
 
 		const Scope=class Scope {
@@ -335,6 +375,7 @@ function defineJavascript() {
 	}
 
 	const Javascript={};
+	Javascript.Element=defineElement();
 	Javascript.Scope=defineScope();
 	return Object.freeze(Javascript);
 

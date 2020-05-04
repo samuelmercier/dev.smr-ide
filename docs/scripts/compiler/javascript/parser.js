@@ -466,17 +466,9 @@ function defineJavascriptParser(Compiler) {
 
 		function parseDeclarators(nameToken) {
 			const result=[];
-			result.push({
-				precedingCommaToken:undefined,
-				nameToken:nameToken,
-				initializerTree:parseDeclaratorInitializer()
-			});
+			result.push(new Compiler.JavascriptTrees.Declarator(undefined, nameToken, parseDeclaratorInitializer()));
 			for(let precedingCommaToken; (precedingCommaToken=checkPunctuator(","))!==undefined; )
-				result.push({
-					precedingCommaToken:precedingCommaToken,
-					nameToken:expectIdentifier(),
-					initializerTree:parseDeclaratorInitializer()
-				});
+				result.push(new Compiler.JavascriptTrees.Declarator(precedingCommaToken, expectIdentifier(), parseDeclaratorInitializer()));
 			return result;
 		}
 
@@ -754,10 +746,9 @@ function defineJavascriptParser(Compiler) {
 						source, lines.length, offset, offset+arrowToken.text.length, "syntax error: invalid lambda parameters"
 					));
 				}
-				parameterTrees.push({
-					precedingCommaToken:precedingCommaToken,
-					nameToken:expressionTree.leftOperandTree.nameToken
-				});
+				parameterTrees.push(new Compiler.JavascriptTrees.FunctionParameter(
+					precedingCommaToken, undefined, expressionTree.leftOperandTree.nameToken
+				));
 				precedingCommaToken=expressionTree.operatorToken;
 				expressionTree=expressionTree.rightOperandTree;
 			}
@@ -767,10 +758,9 @@ function defineJavascriptParser(Compiler) {
 					source, lines.length, offset, offset+arrowToken.text.length, "syntax error: invalid lambda parameters"
 				));
 			}
-			parameterTrees.push({
-				precedingCommaToken:precedingCommaToken,
-				nameToken:expressionTree.nameToken
-			});
+			parameterTrees.push(new Compiler.JavascriptTrees.FunctionParameter(
+				precedingCommaToken, undefined, expressionTree.nameToken
+			));
 			return parameterTrees;
 		}
 
@@ -831,11 +821,9 @@ function defineJavascriptParser(Compiler) {
 						};
 						break;
 					}
-					parameterTrees.push({
-						annotationTrees:parseAnnotations(),
-						precedingCommaToken:precedingCommaToken,
-						nameToken:expectIdentifier()
-					});
+					parameterTrees.push(new Compiler.JavascriptTrees.FunctionParameter(
+						precedingCommaToken, parseAnnotations(), expectIdentifier()
+					));
 				} while((precedingCommaToken=checkPunctuator(","))!==undefined);
 				closeParenthesisToken=expectPunctuator(")");
 			}
