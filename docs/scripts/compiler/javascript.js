@@ -14,6 +14,8 @@ function defineJavascript() {
 
 			isFunction() { return undefined; }
 
+			resolveMemberAccess(nameToken) { return undefined; }
+
 		};
 
 		Element.Declaration.Arguments=Object.freeze(class Arguments extends Element.Declaration {
@@ -26,6 +28,8 @@ function defineJavascript() {
 
 			isFunction() { return false; }
 
+			resolveMemberAccess(nameToken) { return undefined; }
+
 			getName() { return "arguments"; }
 
 		});
@@ -36,7 +40,9 @@ function defineJavascript() {
 
 			isAssignable() { return undefined; },
 
-			isFunction() { return undefined; }
+			isFunction() { return undefined; },
+
+			resolveMemberAccess(nameToken) { return undefined; }
 
 		});
 

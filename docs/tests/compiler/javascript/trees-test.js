@@ -1587,6 +1587,9 @@
 			.assertDiagnostic(24, 25, "left operand is not assignable")
 			.assertNoMoreDiagnostic();
 
+		parseSingleStatementWithDiagnostics("function f(arg) { arg=0; }")
+			.assertNoMoreDiagnostic();
+
 		parseSingleStatementWithDiagnostics("{ class C {} C=0; }")
 			.assertDiagnostic(14, 15, "left operand is not assignable")
 			.assertNoMoreDiagnostic();
@@ -1646,6 +1649,9 @@
 			.assertNoMoreDiagnostic();
 
 		parseSingleStatementWithDiagnostics("{ function f() {} class C extends f {} }")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("function f(arg) { class C extends arg {} }")
 			.assertNoMoreDiagnostic();
 
 		parseSingleStatementWithDiagnostics("{ const f=0; class C extends f {} }")
@@ -1749,8 +1755,80 @@
 			.assertDiagnostic(24, 25, "cannot invoke operand")
 			.assertNoMoreDiagnostic();
 
+		parseSingleStatementWithDiagnostics("function f(arg) { arg(); }")
+			.assertNoMoreDiagnostic();
+
 		parseSingleStatementWithDiagnostics("{ class C {} C(0); }")
 			.assertDiagnostic(14, 15, "cannot invoke operand")
+			.assertNoMoreDiagnostic();
+
+		// FIXME: add ternary
+	});
+
+	Tests.run(function testMemberAccess() {
+		// FIXME: add array-access
+		parseSingleStatementWithDiagnostics("{ [][0].member; }")
+			.assertNoMoreDiagnostic();
+
+		// FIXME: array literal
+		parseSingleStatementWithDiagnostics("{ [].member; }")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ var a; (a=0).member; }")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("(class {}).member;")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("(function() {}).member;")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("(1+1).member;")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("(_=>undefined).member;")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("(()=>undefined).member;")
+			.assertNoMoreDiagnostic();
+
+		// FIXME: add member-access
+		parseSingleStatementWithDiagnostics("{ var a; a.member.member; }")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ var a; a++.member; }")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ var a; ++a.member; }")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("for(const a of {}) a.member;")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("for(let a of {}) a.member;")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("for(var a of {}) a.member;")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ function f() {} f.member; }")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ const f=0; f.member; }")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ let f; f.member; }")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ var f; f.member; }")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("function f() { arguments.member; }")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("function f(arg) { arg.member; }")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ class C {} C.member; }")
 			.assertNoMoreDiagnostic();
 
 		// FIXME: add ternary
@@ -1825,6 +1903,9 @@
 
 		parseSingleStatementWithDiagnostics("function f() { arguments++; }")
 			.assertDiagnostic(24, 26, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("function f(arg) { arg++; }")
 			.assertNoMoreDiagnostic();
 
 		parseSingleStatementWithDiagnostics("{ class C {} C++; }")
@@ -1905,6 +1986,9 @@
 			.assertDiagnostic(15, 17, "invalid increment/decrement operand")
 			.assertNoMoreDiagnostic();
 
+		parseSingleStatementWithDiagnostics("function f(arg) { --arg; }")
+			.assertNoMoreDiagnostic();
+
 		parseSingleStatementWithDiagnostics("{ class C {} --C; }")
 			.assertDiagnostic(13, 15, "invalid increment/decrement operand")
 			.assertNoMoreDiagnostic();
@@ -1981,6 +2065,9 @@
 
 		parseSingleStatementWithDiagnostics("function f() { ++arguments; }")
 			.assertDiagnostic(15, 17, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("function f(arg) { ++arg; }")
 			.assertNoMoreDiagnostic();
 
 		parseSingleStatementWithDiagnostics("{ class C {} ++C; }")

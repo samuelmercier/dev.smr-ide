@@ -171,6 +171,8 @@ function defineJavascriptTrees(Compiler) {
 
 		isFunction() { return false; }
 
+		resolveMemberAccess(memberName) { return undefined; }
+
 	}),
 
 	Trees.Declarator=class Declarator {
@@ -186,6 +188,8 @@ function defineJavascriptTrees(Compiler) {
 		isClass() { return undefined; }
 
 		isFunction() { return undefined; }
+
+		resolveMemberAccess() { return undefined; }
 
 	};
 
@@ -282,6 +286,8 @@ function defineJavascriptTrees(Compiler) {
 		isClass() { return undefined; }
 
 		isFunction() { return undefined; }
+
+		resolveMemberAccess(nameToken) { return undefined; }
 
 	};
 
@@ -668,7 +674,6 @@ function defineJavascriptTrees(Compiler) {
 			this.operandTree=operandTree;
 			this.dotToken=dotToken;
 			this.nameToken=nameToken;
-			Object.freeze(this);
 		}
 
 		kind() { return "member-access"; }
@@ -679,7 +684,11 @@ function defineJavascriptTrees(Compiler) {
 
 		buildScope(analyzer, parentScope) { this.operandTree.buildScope(analyzer, parentScope); }
 
-		resolve(analyzer) { this.operandTree.resolve(analyzer); }
+		resolve(analyzer) {
+			this.operand=this.operandTree.resolve(analyzer);
+			Object.freeze(this);
+			return this.operand!==undefined ? this.operand.resolveMemberAccess(this.nameToken) : undefined;
+		}
 
 		generate(generator) {
 			this.operandTree.generate(generator);
@@ -1057,6 +1066,8 @@ function defineJavascriptTrees(Compiler) {
 
 		isFunction() { return true; }
 
+		resolveMemberAccess() { return undefined; }
+
 	});
 
 	Trees.FunctionParameter=Object.freeze(class FunctionParameter {
@@ -1071,7 +1082,11 @@ function defineJavascriptTrees(Compiler) {
 
 		isAssignable() { return true; }
 
+		isClass() { return undefined; }
+
 		isFunction() { return undefined; }
+
+		resolveMemberAccess() { return undefined; }
 
 	});
 
@@ -1712,6 +1727,8 @@ function defineJavascriptTrees(Compiler) {
 		isClass() { return undefined; }
 
 		isFunction() { return undefined; }
+
+		resolveMemberAccess(nameToken) { return undefined; }
 
 	});
 
