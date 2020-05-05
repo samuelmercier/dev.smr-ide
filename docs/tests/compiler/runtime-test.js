@@ -105,13 +105,13 @@ Tests.run(function testLogFirefoxMappedSources() {
 
 	element.childNodes[1].onclick();
 	Assertions.assertEqual(source, source1);
-	Assertions.assertEqual(selectionStart, 42);
-	Assertions.assertEqual(selectionEnd, 42);
+	Assertions.assertEqual(selectionStart, 1);
+	Assertions.assertEqual(selectionEnd, 1);
 
 	element.childNodes[2].onclick();
 	Assertions.assertEqual(source, source2);
-	Assertions.assertEqual(selectionStart, 43);
-	Assertions.assertEqual(selectionEnd, 43);
+	Assertions.assertEqual(selectionStart, 5);
+	Assertions.assertEqual(selectionEnd, 5);
 
 });
 
@@ -164,12 +164,12 @@ Tests.run(function testLogFirefoxMappedSources() {
 
 	element.childNodes[1].onclick();
 	Assertions.assertEqual(source, source1);
-	Assertions.assertEqual(selectionStart, 42);
-	Assertions.assertEqual(selectionEnd, 42);
+	Assertions.assertEqual(selectionStart, 1);
+	Assertions.assertEqual(selectionEnd, 1);
 
 	element.childNodes[2].onclick();
 	Assertions.assertEqual(source, source2);
-	Assertions.assertEqual(selectionStart, 43);
-	Assertions.assertEqual(selectionEnd, 43);
+	Assertions.assertEqual(selectionStart, 5);
+	Assertions.assertEqual(selectionEnd, 5);
 
 });

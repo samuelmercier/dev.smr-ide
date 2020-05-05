@@ -55,7 +55,7 @@ const Runtime=function() {
 				if(name.endsWith(" ("))
 					name=name.substring(0, name.length-2);
 				stack.appendChild(System.gui.createElement("div", "stack-link", {
-					onclick:function(event) { onstackentryclick(source, source.tree().lines[lineIndex], source.tree().lines[lineIndex]); }
+					onclick:function(event) { onstackentryclick(source, source.tree().lines[lineIndex-1], source.tree().lines[lineIndex-1]); }
 				}, document.createTextNode(name+":"+source.name()+":"+lineIndex)));
 			}
 			return stack;
