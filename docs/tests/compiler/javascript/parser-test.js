@@ -275,6 +275,7 @@
 		assertPunctuator(tree.dotToken, ".");
 		assertIdentifier(tree.nameToken, "memberName");
 
+		assertIdentifier(parseSingleExpression("member-access", "expression.for").nameToken, "for");
 		assertIdentifier(parseSingleExpression("member-access", "expression.return").nameToken, "return");
 		assertIdentifier(parseSingleExpression("member-access", "expression.this").nameToken, "this");
 		assertIdentifier(parseSingleExpression("member-access", "expression.throw").nameToken, "throw");
