@@ -1255,15 +1255,17 @@
 
 (function testAnalyze() {
 
+	const Scope={ resolveScopeAccess:function(memberName) { return memberName==="Object" ? { members:new Map() } : undefined; } };
+
 	function parseSingleStatement(input) {
-		const result=Compiler.parseJavascript("sourceId", input).buildScope(Compiler.Javascript.Scope.Empty);
+		const result=Compiler.parseJavascript("sourceId", input).buildScope(Scope);
 		assertDiagnostics(result).assertNoMoreDiagnostic();
 		Assertions.assertEqual(result.statementTrees.length, 1);
 		return result.statementTrees[0];
 	}
 
 	function parseSingleStatementWithDiagnostics(input) {
-		const result=Compiler.parseJavascript("sourceId", input).buildScope(Compiler.Javascript.Scope.Empty);
+		const result=Compiler.parseJavascript("sourceId", input).buildScope(Scope);
 		Assertions.assertEqual(result.statementTrees.length, 1);
 		return assertDiagnostics(result);
 	}
@@ -1464,6 +1466,22 @@
 	});
 
 	Tests.run(function testClassMembersResolution() {
+		const tree1=parseSingleStatement("{ class C { f() {} } new C().f(); }");
+		Assertions.assertEqual(tree1.statementTrees[1].expressionTree.operand, tree1.statementTrees[0].classTree.members.get("f"));
+
+		const tree2=parseSingleStatement("{ class C { f() {} } class D extends C {} new D().f(); }");
+		Assertions.assertEqual(tree2.statementTrees[2].expressionTree.operand, tree2.statementTrees[0].classTree.members.get("f"));
+
+		parseSingleStatementWithDiagnostics("{ class C {} new C().f(); }")
+		.assertDiagnostic(21, 22, "cannot resolve 'f'")
+		.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("(new class C {}.f());")
+		.assertDiagnostic(16, 17, "cannot resolve 'f'")
+		.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testClassStaticsResolution() {
 		const tree=parseSingleStatement("{ class C { static f() {} } C.f(); }");
 		Assertions.assertEqual(tree.statementTrees[1].expressionTree.operand, tree.statementTrees[0].classTree.statics.get("f"));
 
@@ -1474,6 +1492,16 @@
 		parseSingleStatementWithDiagnostics("(class C {}.f());")
 		.assertDiagnostic(12, 13, "cannot resolve 'f'")
 		.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testCircularClassReference() {
+		parseSingleStatementWithDiagnostics("class C extends C {}")
+			.assertDiagnostic(8, 15, "circular hierarchy")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ class C extends D {} class D extends C {} }")
+			.assertDiagnostic(31, 38, "circular hierarchy")
+			.assertNoMoreDiagnostic();
 	});
 
 	Tests.run(function testResolutions() {
@@ -1545,8 +1573,10 @@
 
 (function testAnalyzeExpression() {
 
+	const Scope={ resolveScopeAccess:function(memberName) { return memberName==="Object" ? {} : undefined; } };
+
 	function parseSingleStatementWithDiagnostics(input) {
-		const result=Compiler.parseJavascript("sourceId", input).buildScope(Compiler.Javascript.Scope.Empty);
+		const result=Compiler.parseJavascript("sourceId", input).buildScope(Scope);
 		Assertions.assertEqual(result.statementTrees.length, 1);
 		return assertDiagnostics(result);
 	}
@@ -1714,6 +1744,12 @@
 			.assertNoMoreDiagnostic();
 	});
 
+	Tests.run(function testExtendsClassMethod() {
+		parseSingleStatementWithDiagnostics("class C extends class { static method() {} }.method {}")
+			.assertDiagnostic(8, 15, "extends expression is not a class")
+			.assertNoMoreDiagnostic();
+	});
+
 	Tests.run(function testExtendsFunctionExpression() {
 		parseSingleStatementWithDiagnostics("class C extends function() {} {}")
 			.assertNoMoreDiagnostic();
@@ -1745,13 +1781,24 @@
 			.assertNoMoreDiagnostic();
 	});
 
+	Tests.run(function testExtendsNull() {
+		parseSingleStatementWithDiagnostics("class C extends null {}")
+			.assertNoMoreDiagnostic();
+	});
+
 	Tests.run(function testExtendsObjectLiteralExpression() {
 		parseSingleStatementWithDiagnostics("class C extends {} {}")
 			.assertDiagnostic(8, 15, "extends expression is not a class")
 			.assertNoMoreDiagnostic();
 	});
 
-	Tests.run(function testExtendsAssignPostfixExpression() {
+	Tests.run(function testExtendsObjectMethod() {
+		parseSingleStatementWithDiagnostics("class C extends { method() {} }.method {}")
+			.assertDiagnostic(8, 15, "extends expression is not a class")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testExtendsPostfixExpression() {
 		parseSingleStatementWithDiagnostics("{ var a; class C extends a++ {} }")
 			.assertDiagnostic(17, 24, "extends expression is not a class")
 			.assertNoMoreDiagnostic();

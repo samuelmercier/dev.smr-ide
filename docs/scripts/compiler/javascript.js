@@ -22,6 +22,8 @@ function defineJavascript() {
 
 			constructor() { super(); }
 
+			kind() { return "function-arguments"; }
+
 			isAssignable() { return false; }
 
 			isClass() { return false; }
@@ -36,6 +38,8 @@ function defineJavascript() {
 
 		Element.Declaration.Invalid=Object.freeze({
 
+			kind() { return "invalid"; },
+
 			getName() { return "<invalid>"; },
 
 			isAssignable() { return undefined; },
@@ -47,6 +51,34 @@ function defineJavascript() {
 		});
 
 		Object.freeze(Element.Declaration);
+
+		Element.Expression={};
+
+		Element.Expression.InstanceReference=Object.freeze(class InstanceReference {
+
+			constructor(classTree) { this.classTree=classTree; }
+
+			kind() { return "instance-reference"; }
+
+			isAssignable() { return false; }
+
+			isClass() { return false; }
+
+			isFunction() { return false; }
+
+			resolveMemberAccess(analyzer, nameToken) {
+				for(let current=this.classTree; current!==undefined; current=current.baseClass) {
+					const member=current.members.get(nameToken.text);
+					if(member!==undefined)
+						return member;
+				}
+				analyzer.newDiagnostic(nameToken, "cannot resolve '"+nameToken.text+"'");
+				return undefined;
+			}
+
+		});
+
+		Object.freeze(Element.Expression);
 
 		return Object.freeze(Element);
 

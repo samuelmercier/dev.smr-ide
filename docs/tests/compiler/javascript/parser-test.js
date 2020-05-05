@@ -3,6 +3,8 @@
 /* parser and first pass analyzer tests. */
 (function() {
 
+	const Scope={ resolveScopeAccess:function(memberName) { return memberName==="Object" ? {} : undefined; } };
+
 	function parseSingleExpression(kind, input) {
 		const tree=parseSingleStatement("expression", "("+input+");");
 		Assertions.assertEqual(tree.expressionTree.kind(), "parenthesized");
@@ -12,7 +14,7 @@
 	}
 
 	function parseSingleStatement(kind, input) {
-		const result=Compiler.parseJavascript("sourceId", input).buildScope(Compiler.Javascript.Scope.Empty);
+		const result=Compiler.parseJavascript("sourceId", input).buildScope(Scope);
 		assertDiagnostics(result).assertNoMoreDiagnostic();
 		Assertions.assertEqual(result.statementTrees.length, 1);
 		Assertions.assertEqual(result.statementTrees[0].kind(), kind);
@@ -20,7 +22,7 @@
 	}
 
 	function parseSingleStatementIgnoreDiagnostics(kind, input) {
-		const result=Compiler.parseJavascript("sourceId", input).buildScope(Compiler.Javascript.Scope.Empty);
+		const result=Compiler.parseJavascript("sourceId", input).buildScope(Scope);
 		Assertions.assertEqual(result.statementTrees.length, 1);
 		Assertions.assertEqual(result.statementTrees[0].kind(), kind);
 		return result.statementTrees[0];
