@@ -1575,6 +1575,16 @@
 		Assertions.assertEqual(constructorTree.blockTree.statementTrees[0].expressionTree.declaration, constructorTree.vars.get("super"));
 	});
 
+	Tests.run(function testMethodNameResolutionInFunction() {
+		const functionTree=parseSingleStatement("function f() { f; }").functionTree;
+		Assertions.assertEqual(functionTree.blockTree.statementTrees[0].expressionTree.declaration, Compiler.Javascript.Element.Declaration.Invalid);
+	});
+
+	Tests.run(function testThisResolutionInFunction() {
+		const functionTree=parseSingleStatement("function f() { this; }").functionTree;
+		Assertions.assertEqual(functionTree.blockTree.statementTrees[0].expressionTree.declaration, Compiler.Javascript.Element.Declaration.Invalid);
+	});
+
 	Tests.run(function testAnalyzeRegisterVar() {
 		Assertions.assertTrue(parseSingleStatement("function f() { var a; }").functionTree.vars.has("a"));
 

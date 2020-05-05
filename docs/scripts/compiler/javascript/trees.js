@@ -1158,6 +1158,9 @@ function defineJavascriptTrees(Compiler) {
 			this.parameters=this.parametersTree.buildParameters(analyzer);
 			this.vars=new Map();
 			this.vars.set("arguments", new Compiler.Javascript.Element.Declaration.Arguments());
+			this.vars.set("this", Compiler.Javascript.Element.Declaration.Invalid);
+			if(this.nameToken!==undefined)
+				this.vars.set(this.nameToken.text, Compiler.Javascript.Element.Declaration.Invalid);
 			this.blockTree.buildScope(analyzer, new Scope.Function(parentScope, this));
 			Object.freeze(this);
 		}
