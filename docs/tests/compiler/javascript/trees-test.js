@@ -47,6 +47,14 @@
 		assertGenerateSingleStatement(" a | b ;");
 	});
 
+	Tests.run(function testGenerateExpressionInfixLogicalAnd() {
+		assertGenerateSingleStatement(" a && b ;");
+	});
+
+	Tests.run(function testGenerateExpressionInfixLogicalOr() {
+		assertGenerateSingleStatement(" a || b ;");
+	});
+
 	Tests.run(function testGenerateExpressionInvocation() {
 		assertGenerateSingleStatement(" f ( ) ;");
 		assertGenerateSingleStatement(" f ( a , b ) ;");
@@ -1657,6 +1665,16 @@
 			.assertNoMoreDiagnostic();
 	});
 
+	Tests.run(function testAssignInfixLogicalAndExpression() {
+		parseSingleStatementWithDiagnostics("(1&&1)=0;")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testAssignInfixLogicalOrExpression() {
+		parseSingleStatementWithDiagnostics("(1||1)=0;")
+			.assertNoMoreDiagnostic();
+	});
+
 	Tests.run(function testAssignLambdaExpression() {
 		parseSingleStatementWithDiagnostics("(_=>undefined)=0;")
 			.assertDiagnostic(14, 15, "left operand is not assignable")
@@ -1798,6 +1816,16 @@
 	Tests.run(function testExtendsInfixExpression() {
 		parseSingleStatementWithDiagnostics("class C extends 1+1 {}")
 			.assertDiagnostic(8, 15, "extends expression is not a class")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testExtendsInfixLogicalAndExpression() {
+		parseSingleStatementWithDiagnostics("class C extends (1&&1) {}")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testExtendsInfixLogicalOrExpression() {
+		parseSingleStatementWithDiagnostics("class C extends (1||1) {}")
 			.assertNoMoreDiagnostic();
 	});
 
@@ -1956,6 +1984,16 @@
 			.assertNoMoreDiagnostic();
 	});
 
+	Tests.run(function testInvocationInfixLogicalAndExpression() {
+		parseSingleStatementWithDiagnostics("(1&&1)();")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testInvocationInfixLogicalOrExpression() {
+		parseSingleStatementWithDiagnostics("(1||1)();")
+			.assertNoMoreDiagnostic();
+	});
+
 	Tests.run(function testInvocationLambdaExpression() {
 		parseSingleStatementWithDiagnostics("(_=>undefined)();")
 			.assertDiagnostic(14, 15, "expected at least 1 argument(s); got 0")
@@ -2098,6 +2136,16 @@
 
 	Tests.run(function testMemberAccessInfixExpression() {
 		parseSingleStatementWithDiagnostics("(1+1).member;")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testMemberAccessInfixLogicalAndExpression() {
+		parseSingleStatementWithDiagnostics("(1&&1).member;")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testMemberAccessInfixLogicalOrExpression() {
+		parseSingleStatementWithDiagnostics("(1||1).member;")
 			.assertNoMoreDiagnostic();
 	});
 
@@ -2259,6 +2307,22 @@
 			.assertNoMoreDiagnostic();
 		parseSingleStatementWithDiagnostics("new (1+1)();")
 			.assertDiagnostic(0, 3, "operand is not a class")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testNewInfixLogicalAndExpression() {
+		parseSingleStatementWithDiagnostics("new (1&&1);")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("new (1&&1)();")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testNewInfixLogicalOrExpression() {
+		parseSingleStatementWithDiagnostics("new (1||1);")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("new (1||1)();")
 			.assertNoMoreDiagnostic();
 	});
 
@@ -2487,6 +2551,22 @@
 			.assertNoMoreDiagnostic();
 	});
 
+	Tests.run(function testPostfixInfixLogicalAndExpression() {
+		parseSingleStatementWithDiagnostics("(1&&1)++;")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("(1&&1)--;")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testPostfixInfixLogicalOrExpression() {
+		parseSingleStatementWithDiagnostics("(1||1)++;")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("(1||1)--;")
+			.assertNoMoreDiagnostic();
+	});
+
 	Tests.run(function testPostfixLambdaExpression() {
 		parseSingleStatementWithDiagnostics("(_=>undefined)++;")
 			.assertDiagnostic(14, 16, "invalid increment/decrement operand")
@@ -2700,6 +2780,22 @@
 
 		parseSingleStatementWithDiagnostics("--(1+1);")
 			.assertDiagnostic(0, 2, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testPostfixInfixLogicalAndExpression() {
+		parseSingleStatementWithDiagnostics("++(1&&1);")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("--(1&&1);")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testPostfixInfixLogicalOrExpression() {
+		parseSingleStatementWithDiagnostics("++(1||1);")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("--(1||1);")
 			.assertNoMoreDiagnostic();
 	});
 

@@ -538,10 +538,7 @@ function defineJavascriptTrees(Compiler) {
 		generate(generator) {
 			this.leftOperandTree.generate(generator);
 			generator.generate(this.operatorToken);
-			if(this.operatorToken.text==="&&"||this.operatorToken.text==="||")
-				generator.probeExpression(this.rightOperandTree);
-			else
-				this.rightOperandTree.generate(generator);
+			this.rightOperandTree.generate(generator);
 		}
 
 		/* *** semantic part. *** */
@@ -551,6 +548,54 @@ function defineJavascriptTrees(Compiler) {
 		isClass() { return false; }
 
 		isFunction() { return false; }
+
+	});
+
+	Trees.Expression.InfixLogicalAnd=Object.freeze(class InfixLogicalAndExpression extends Trees.Expression.Infix {
+
+		constructor(leftOperandTree, operatorToken, rightOperandTree) {
+			super(leftOperandTree, operatorToken, rightOperandTree);
+		}
+
+		kind() { return "infix-logical-and"; }
+
+		generate(generator) {
+			this.leftOperandTree.generate(generator);
+			generator.generate(this.operatorToken);
+			generator.probeExpression(this.rightOperandTree);
+		}
+
+		/* *** semantic part. *** */
+
+		isAssignable() { return undefined; }
+
+		isClass() { return undefined; }
+
+		isFunction() { return undefined; }
+
+	});
+
+	Trees.Expression.InfixLogicalOr=Object.freeze(class InfixLogicalOrExpression extends Trees.Expression.Infix {
+
+		constructor(leftOperandTree, operatorToken, rightOperandTree) {
+			super(leftOperandTree, operatorToken, rightOperandTree);
+		}
+
+		kind() { return "infix-logical-or"; }
+
+		generate(generator) {
+			this.leftOperandTree.generate(generator);
+			generator.generate(this.operatorToken);
+			generator.probeExpression(this.rightOperandTree);
+		}
+
+		/* *** semantic part. *** */
+
+		isAssignable() { return undefined; }
+
+		isClass() { return undefined; }
+
+		isFunction() { return undefined; }
 
 	});
 

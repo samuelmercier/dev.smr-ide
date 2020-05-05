@@ -518,14 +518,14 @@ function defineJavascriptParser(Compiler) {
 		function parseExpressionInfix1(operand) {
 			let tree=parseExpressionInfix2(operand);
 			for(let operatorToken; (operatorToken=checkOperator("||"))!==undefined; )
-				tree=new Compiler.JavascriptTrees.Expression.Infix(tree, operatorToken, parseExpressionInfix2());
+				tree=new Compiler.JavascriptTrees.Expression.InfixLogicalOr(tree, operatorToken, parseExpressionInfix2());
 			return tree;
 		}
 
 		function parseExpressionInfix2(operand) {
 			let tree=parseExpressionInfix3(operand);
 			for(let operatorToken; (operatorToken=checkOperator("&&"))!==undefined; )
-				tree=new Compiler.JavascriptTrees.Expression.Infix(tree, operatorToken, parseExpressionInfix3());
+				tree=new Compiler.JavascriptTrees.Expression.InfixLogicalAnd(tree, operatorToken, parseExpressionInfix3());
 			return tree;
 		}
 
