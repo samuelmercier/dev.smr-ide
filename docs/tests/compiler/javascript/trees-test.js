@@ -1705,6 +1705,7 @@
 
 	Tests.run(function testExtendsAssignExpression() {
 		parseSingleStatementWithDiagnostics("{ var a; class C extends a=0 {} }")
+			.assertDiagnostic(17, 24, "extends expression is not a class")
 			.assertNoMoreDiagnostic();
 	});
 
@@ -1735,6 +1736,7 @@
 
 	Tests.run(function testExtendsLiteralExpression() {
 		parseSingleStatementWithDiagnostics("{ var a; class C extends 0 {} }")
+			.assertDiagnostic(17, 24, "extends expression is not a class")
 			.assertNoMoreDiagnostic();
 	});
 
@@ -2106,6 +2108,237 @@
 	});
 
 	Tests.run(function testMemberAccessTernaryExpression() {
+		// FIXME: add ternary
+	});
+
+	Tests.run(function testNewArrayLiteralExpression() {
+		parseSingleStatementWithDiagnostics("new [];")
+			.assertDiagnostic(0, 3, "operand is not a class")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("new []();")
+			.assertDiagnostic(0, 3, "operand is not a class")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testNewAssignExpression() {
+		parseSingleStatementWithDiagnostics("{ var a; new (a=0); }")
+			.assertDiagnostic(9, 12, "operand is not a class")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("{ var a; new (a=0)(); }")
+			.assertDiagnostic(9, 12, "operand is not a class")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ var a, b; new (a=b); }")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("{ var a, b; new (a=b)(); }")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testNewClassExpression() {
+		parseSingleStatementWithDiagnostics("new class {};")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("new class { constructor(parameter) {} };")
+			.assertDiagnostic(0, 3, "expected arguments")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("new class {}();")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("new class {}(0);")
+			.assertDiagnostic(0, 3, "expected 0 argument")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("new class { constructor(parameter) {} }();")
+			.assertDiagnostic(0, 3, "expected at least 1 argument(s); got 0")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testNewFunctionExpression() {
+		parseSingleStatementWithDiagnostics("new function() {};")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("new function(parameter) {};")
+			.assertDiagnostic(0, 3, "expected arguments")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("new function() {}();")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("new function() {}(0);")
+			.assertDiagnostic(0, 3, "expected at most 0 argument(s); got 1")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("new function(parameter) {}();")
+			.assertDiagnostic(0, 3, "expected at least 1 argument(s); got 0")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testNewInfixExpression() {
+		parseSingleStatementWithDiagnostics("new (1+1);")
+			.assertDiagnostic(0, 3, "operand is not a class")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("new (1+1)();")
+			.assertDiagnostic(0, 3, "operand is not a class")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testNewLambdaExpression() {
+		parseSingleStatementWithDiagnostics("new _=>undefined;")
+			.assertDiagnostic(0, 3, "operand is not a class")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("new (_=>undefined)();")
+			.assertDiagnostic(0, 3, "operand is not a class")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("new ()=>undefined;")
+			.assertDiagnostic(0, 3, "operand is not a class")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("new (()=>undefined)();")
+			.assertDiagnostic(0, 3, "operand is not a class")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testNewLiteralExpression() {
+		parseSingleStatementWithDiagnostics("new 1;")
+			.assertDiagnostic(0, 3, "operand is not a class")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("new 1();")
+			.assertDiagnostic(0, 3, "operand is not a class")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testNewMemberAccessExpression() {
+		parseSingleStatementWithDiagnostics("{ var a; new a.member; }")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("{ var a; new a.member(); }")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testNewObjectLiteralExpression() {
+		parseSingleStatementWithDiagnostics("new {};")
+			.assertDiagnostic(0, 3, "operand is not a class")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("new {}();")
+			.assertDiagnostic(0, 3, "operand is not a class")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testNewPostfixExpression() {
+		parseSingleStatementWithDiagnostics("{ var a; new (a++); }")
+			.assertDiagnostic(9, 12, "operand is not a class")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("{ var a; new (a++)(); }")
+			.assertDiagnostic(9, 12, "operand is not a class")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ var a; new (a--); }")
+			.assertDiagnostic(9, 12, "operand is not a class")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("{ var a; new (a--)(); }")
+			.assertDiagnostic(9, 12, "operand is not a class")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testNewPrefixExpression() {
+		parseSingleStatementWithDiagnostics("{ var a; new (++a); }")
+			.assertDiagnostic(9, 12, "operand is not a class")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("{ var a; new (++a)(); }")
+			.assertDiagnostic(9, 12, "operand is not a class")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ var a; new (--a); }")
+			.assertDiagnostic(9, 12, "operand is not a class")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("{ var a; new (--a)(); }")
+			.assertDiagnostic(9, 12, "operand is not a class")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testNewScopeAccessClassStatement() {
+		parseSingleStatementWithDiagnostics("{ class C {} new C; }")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("{ class C { constructor(parameter) {} } new C; }")
+			.assertDiagnostic(40, 43, "expected arguments")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("{ class C {} new C(); }")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("{ class C {} new C(0); }")
+			.assertDiagnostic(13, 16, "expected 0 argument")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("{ class C { constructor(parameter) {} } new C(); }")
+			.assertDiagnostic(40, 43, "expected at least 1 argument(s); got 0")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testNewScopeAccessForEachConst() {
+		parseSingleStatementWithDiagnostics("for(const a of {}) new a;")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("for(const a of {}) new a();")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testNewScopeAccessForEachLet() {
+		parseSingleStatementWithDiagnostics("for(let a of {}) new a;")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("for(let a of {}) new a();")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testNewScopeAccessForEachVar() {
+		parseSingleStatementWithDiagnostics("for(var a of {}) new a;")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("for(var a of {}) new a();")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testNewScopeAccessFunctionArguments() {
+		parseSingleStatementWithDiagnostics("function f() { new arguments; }")
+			.assertDiagnostic(15, 18, "operand is not a class")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("function f() { new arguments(); }")
+			.assertDiagnostic(15, 18, "operand is not a class")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testNewScopeAccessFunctionParameter() {
+		parseSingleStatementWithDiagnostics("function f(parameter) { new parameter; }")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("function f(parameter) { new parameter(); }")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testNewScopeAccessFunctionStatement() {
+		parseSingleStatementWithDiagnostics("{ function f() {} new f; }")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("{ function f(parameter) {} new f; }")
+			.assertDiagnostic(27, 30, "expected arguments")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("{ function f() {} new f(); }")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("{ function f() {} new f(0); }")
+			.assertDiagnostic(18, 21, "expected at most 0 argument(s); got 1")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("{ function f(parameter) {} new f(); }")
+			.assertDiagnostic(27, 30, "expected at least 1 argument(s); got 0")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testNewScopeAccessVariablesConst() {
+		parseSingleStatementWithDiagnostics("{ const f=0; new f; }")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("{ const f=0; new f(); }")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testNewScopeAccessVariablesLet() {
+		parseSingleStatementWithDiagnostics("{ let f; new f; }")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("{ let f; new f(); }")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testNewScopeAccessVariablesVar() {
+		parseSingleStatementWithDiagnostics("{ var f; new f; }")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("{ var f; new f(); }")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testNewTernaryExpression() {
 		// FIXME: add ternary
 	});
 

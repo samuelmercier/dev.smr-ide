@@ -620,17 +620,31 @@ function defineJavascriptParser(Compiler) {
 				case "delete":
 					return new Compiler.JavascriptTrees.Expression.PrefixDelete(token, parseExpressionPrefix());
 				case "new":
-					return new Compiler.JavascriptTrees.Expression.PrefixNew(token, parseExpressionPrefix());
+					let operand=parseExpressionOperand();
+					for(let dotToken; (dotToken=checkPunctuator("."))!==undefined; ) {
+						let keywordToken=checkKeywords(memberNameKeywords);
+						operand=keywordToken!==undefined
+							? new Compiler.JavascriptTrees.Expression.MemberAccess(operand, dotToken, keywordToken)
+							: new Compiler.JavascriptTrees.Expression.MemberAccess(operand, dotToken, expectIdentifier());
+					}
+					const openParenthesisToken=checkPunctuator("(");
+					if(openParenthesisToken===undefined)
+						return parseExpressionPostfix(new Compiler.JavascriptTrees.Expression.PrefixNew(token, operand));
+					const closeParenthesisToken=checkPunctuator(")");
+					operand=closeParenthesisToken!==undefined
+						? new Compiler.JavascriptTrees.Expression.PrefixNewInvocation(token, operand, openParenthesisToken, undefined, closeParenthesisToken)
+						: new Compiler.JavascriptTrees.Expression.PrefixNewInvocation(token, operand, openParenthesisToken, parseExpression(), expectPunctuator(")"));
+					return parseExpressionPostfix(operand);
 				case "typeof":
 					return new Compiler.JavascriptTrees.Expression.PrefixTypeOf(token, parseExpressionPrefix());
 				case "void":
 					return new Compiler.JavascriptTrees.Expression.PrefixVoid(token, parseExpressionPrefix());
 				}
-			return parseExpressionPostfix();
+			return parseExpressionPostfix(parseExpressionOperand());
 		}
 
-		function parseExpressionPostfix() {
-			for(let result=parseExpressionOperand(), token; ; ) {
+		function parseExpressionPostfix(result) {
+			for(let token; ; ) {
 				if((token=checkOperators(postfixes))!==undefined)
 					switch(token.text) {
 					default:
