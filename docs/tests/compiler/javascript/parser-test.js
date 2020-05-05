@@ -687,6 +687,12 @@
 		assertScopeAccessStatement(tree.statementTree, "statement");
 	});
 
+	Tests.run(function testScanIndentifierAfterNumberMustFail() {
+		assertDiagnostics(Compiler.parseJavascript("sourceId", " 0.member;"))
+			.assertDiagnostic(2, 2, "syntax error: identifier starts immediately after numeric literal")
+			.assertNoMoreDiagnostic();
+	});
+
 	Tests.run(function testScanUnterminatedCharacterConstantMustFail() {
 		assertDiagnostics(Compiler.parseJavascript("sourceId", " ' \n;"))
 			.assertDiagnostic(1, 3, "syntax error: unterminated character constant")

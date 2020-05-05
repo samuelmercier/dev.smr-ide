@@ -259,7 +259,10 @@ function defineJavascriptParser(Compiler) {
 			const start=offset;
 			while(isident(input.charCodeAt(++offset)));
 			if(input.charCodeAt(offset)===46) // .
-				while(isident(input.charCodeAt(++offset)));
+				if(isalpha(input.charCodeAt(offset+1)))
+					newDiagnostic(offset, offset, "syntax error: identifier starts immediately after numeric literal");
+				else
+					while(isident(input.charCodeAt(++offset)));
 			const text=input.substring(start, offset);
 			let value=undefined;
 			try {
