@@ -1526,6 +1526,14 @@
 			.assertNoMoreDiagnostic();
 	});
 
+	Tests.run(function testObjectLiteralThisResolution() {
+		const tree=parseSingleStatement("({ f() { this; } });").expressionTree.operandTree;
+		Assertions.assertEqual(tree.memberTrees[0].blockTree.statementTrees[0].expressionTree.declaration, tree);
+
+		const methodTree=parseSingleStatement("({ f() { this.f; } });").expressionTree.operandTree.memberTrees[0];
+		Assertions.assertEqual(methodTree.blockTree.statementTrees[0].expressionTree.element, methodTree);
+	});
+
 	Tests.run(function testResolutions() {
 		const result=Compiler.parseJavascript("sourceId", [
 			"function f(arg) {",

@@ -1510,17 +1510,22 @@ function defineJavascriptTrees(Compiler) {
 		kind() { return "object-literal-method"; }
 
 		buildScope(analyzer, parentScope, literal) {
+			this.literal=literal;
 			if(literal.members.has(this.nameToken.text))
 				analyzer.newDiagnostic(this.nameToken, "redefinition of "+this.nameToken.text+"'");
 			else
 				literal.members.set(this.nameToken.text, this);
 			this.parameters=this.parametersTree.buildParameters(analyzer);
 			this.vars=new Map();
-			this.blockTree.buildScope(analyzer, new Scope.Function(parentScope, this));
 			Object.freeze(this);
+			this.blockTree.buildScope(analyzer, new Scope.Function(parentScope, this));
 		}
 
-		resolve(analyzer) { this.blockTree.resolve(analyzer); }
+		resolve(analyzer) {
+			this.vars.set("arguments", new Compiler.Javascript.Element.Declaration.Arguments());
+			this.vars.set("this", this.literal);
+			this.blockTree.resolve(analyzer);
+		}
 
 		generate(generator) {
 			if(this.precedingCommaToken!==undefined)
