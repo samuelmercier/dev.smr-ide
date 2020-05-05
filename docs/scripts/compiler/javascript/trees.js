@@ -714,8 +714,10 @@ function defineJavascriptTrees(Compiler) {
 
 		resolve(analyzer) {
 			this.operand=this.operandTree.resolve(analyzer);
+			if(this.operand!==undefined)
+				this.element=this.operand.resolveMemberAccess(analyzer, this.nameToken);
 			Object.freeze(this);
-			return this.operand!==undefined ? this.operand.resolveMemberAccess(analyzer, this.nameToken) : undefined;
+			return this.element;
 		}
 
 		generate(generator) {
@@ -1360,6 +1362,7 @@ function defineJavascriptTrees(Compiler) {
 		kind() { return "method-definition"; }
 
 		buildScope(analyzer, parentScope, classTree) {
+			this.classTree=classTree;
 			if(this.staticToken===undefined)
 				if(this.nameToken.text==="constructor")
 					if(classTree.initializer!==undefined)
@@ -1377,15 +1380,18 @@ function defineJavascriptTrees(Compiler) {
 					classTree.statics.set(this.nameToken.text, this);
 			this.parameters=this.parametersTree.buildParameters(analyzer);
 			this.vars=new Map();
-			this.vars.set("arguments", new Compiler.Javascript.Element.Declaration.Arguments());
-			this.vars.set("super", Compiler.Javascript.Element.Declaration.Invalid);
-			this.vars.set("this", Compiler.Javascript.Element.Declaration.Invalid);
-			this.vars.set(this.nameToken.text, this);
-			this.blockTree.buildScope(analyzer, new Scope.Function(parentScope, this));
 			Object.freeze(this);
+			this.blockTree.buildScope(analyzer, new Scope.Function(parentScope, this));
 		}
 
-		resolve(analyzer) { this.blockTree.resolve(analyzer); }
+		resolve(analyzer) {
+			this.vars.set("arguments", new Compiler.Javascript.Element.Declaration.Arguments());
+			if(this.classTree.baseClass!==undefined)
+				this.vars.set("super", new Compiler.Javascript.Element.Expression.InstanceReference(this.classTree.baseClass));
+			this.vars.set("this",new Compiler.Javascript.Element.Expression.InstanceReference(this.classTree));
+			this.vars.set(this.nameToken.text, this);
+			this.blockTree.resolve(analyzer);
+		}
 
 		generate(generator) {
 			if(this.annotationsTree!==undefined)

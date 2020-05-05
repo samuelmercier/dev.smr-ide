@@ -1494,6 +1494,28 @@
 		.assertNoMoreDiagnostic();
 	});
 
+	Tests.run(function testClassSuperResolution() {
+		const trees1=parseSingleStatement("{ class C { f() {} } class D extends C { f() { super; } } }").statementTrees;
+		Assertions.assertEqual(
+			trees1[1].classTree.memberTrees[0].blockTree.statementTrees[0].expressionTree.declaration.classTree,
+			trees1[0].classTree
+		);
+
+		const trees2=parseSingleStatement("{ class C { f() {} } class D extends C { f() { super.f; } } }").statementTrees;
+		Assertions.assertEqual(
+			trees2[1].classTree.memberTrees[0].blockTree.statementTrees[0].expressionTree.element,
+			trees2[0].classTree.memberTrees[0]
+		);
+	});
+
+	Tests.run(function testClassThisResolution() {
+		const tree=parseSingleStatement("class C { f() { this; } }").classTree;
+		Assertions.assertEqual(tree.memberTrees[0].blockTree.statementTrees[0].expressionTree.declaration.classTree, tree);
+
+		const methodTree=parseSingleStatement("class C { f() { this.f; } }").classTree.memberTrees[0];
+		Assertions.assertEqual(methodTree.blockTree.statementTrees[0].expressionTree.element, methodTree);
+	});
+
 	Tests.run(function testCircularClassReference() {
 		parseSingleStatementWithDiagnostics("class C extends C {}")
 			.assertDiagnostic(8, 15, "circular hierarchy")
