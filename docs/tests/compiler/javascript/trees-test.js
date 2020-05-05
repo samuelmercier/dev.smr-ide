@@ -1551,184 +1551,306 @@
 		return assertDiagnostics(result);
 	}
 
-	Tests.run(function testAssign() {
-		// FIXME: add array-access
+	Tests.run(function testAssignArrayAccessExpression() {
+		parseSingleStatementWithDiagnostics("[][0]=0;")
+			.assertNoMoreDiagnostic();
+	});
 
-		// FIXME: array literal
+	Tests.run(function testAssignArrayLiteralExpression() {
+		parseSingleStatementWithDiagnostics("[]=0;")
+			.assertNoMoreDiagnostic();
+	});
 
-		// FIXME: better test
+	Tests.run(function testAssignAssignExpression() {
 		parseSingleStatementWithDiagnostics("{ var a; a=a=0; }")
 			.assertNoMoreDiagnostic();
 		parseSingleStatementWithDiagnostics("{ var a; (a=a)=0; }")
 			.assertDiagnostic(14, 15, "left operand is not assignable")
 			.assertNoMoreDiagnostic();
+	});
 
+	Tests.run(function testAssignClassExpression() {
 		parseSingleStatementWithDiagnostics("(class {})=0;")
 			.assertDiagnostic(10, 11, "left operand is not assignable")
 			.assertNoMoreDiagnostic();
+	});
 
+	Tests.run(function testAssignFunctionExpression() {
 		parseSingleStatementWithDiagnostics("(function() {})=0;")
 			.assertDiagnostic(15, 16, "left operand is not assignable")
 			.assertNoMoreDiagnostic();
+	});
 
+	Tests.run(function testAssignInfixExpression() {
 		parseSingleStatementWithDiagnostics("(1+1)=0;")
 			.assertDiagnostic(5, 6, "left operand is not assignable")
 			.assertNoMoreDiagnostic();
+	});
 
-		parseSingleStatementWithDiagnostics("(function() {})=0;")
-			.assertDiagnostic(15, 16, "left operand is not assignable")
-			.assertNoMoreDiagnostic();
-
+	Tests.run(function testAssignLambdaExpression() {
 		parseSingleStatementWithDiagnostics("(_=>undefined)=0;")
 			.assertDiagnostic(14, 15, "left operand is not assignable")
 			.assertNoMoreDiagnostic();
 		parseSingleStatementWithDiagnostics("(()=>undefined)=0;")
 			.assertDiagnostic(15, 16, "left operand is not assignable")
 			.assertNoMoreDiagnostic();
+	});
 
+	Tests.run(function testAssignLiteralExpression() {
 		parseSingleStatementWithDiagnostics("0=0;")
 			.assertDiagnostic(1, 2, "left operand is not assignable")
 			.assertNoMoreDiagnostic();
+	});
 
-		// FIXME: add member-access
+	Tests.run(function testAssignMemberAccessExpression() {
+		parseSingleStatementWithDiagnostics("(0).member=0;")
+			.assertNoMoreDiagnostic();
+	});
 
+	Tests.run(function testAssignObjectLiteralExpression() {
+		parseSingleStatementWithDiagnostics("({})=0;")
+			.assertDiagnostic(4, 5, "left operand is not assignable")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testAssignPostfixExpression() {
 		parseSingleStatementWithDiagnostics("{ var a; a++=0; }")
 			.assertDiagnostic(12, 13, "left operand is not assignable")
 			.assertNoMoreDiagnostic();
 
+		parseSingleStatementWithDiagnostics("{ var a; a--=0; }")
+			.assertDiagnostic(12, 13, "left operand is not assignable")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testAssignPrefixExpression() {
 		parseSingleStatementWithDiagnostics("{ var a; ++a=0; }")
 			.assertDiagnostic(12, 13, "left operand is not assignable")
 			.assertNoMoreDiagnostic();
 
-		parseSingleStatementWithDiagnostics("for(const a of {}) a=0;")
-			.assertDiagnostic(20, 21, "left operand is not assignable")
+		parseSingleStatementWithDiagnostics("{ var a; --a=0; }")
+			.assertDiagnostic(12, 13, "left operand is not assignable")
 			.assertNoMoreDiagnostic();
+	});
 
-		parseSingleStatementWithDiagnostics("for(let a of {}) a=0;")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("for(var a of {}) a=0;")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("{ function f() {} f=0; }")
-			.assertDiagnostic(19, 20, "left operand is not assignable")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("{ const f=0; f=0; }")
-			.assertDiagnostic(14, 15, "left operand is not assignable")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("{ let f; f=0; }")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("{ var f; f=0; }")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("function f() { arguments=0; }")
-			.assertDiagnostic(24, 25, "left operand is not assignable")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("function f(arg) { arg=0; }")
-			.assertNoMoreDiagnostic();
-
+	Tests.run(function testAssignScopeAccessClassStatement() {
 		parseSingleStatementWithDiagnostics("{ class C {} C=0; }")
 			.assertDiagnostic(14, 15, "left operand is not assignable")
 			.assertNoMoreDiagnostic();
+	});
 
+	Tests.run(function testAssignScopeAccessForEachConst() {
+		parseSingleStatementWithDiagnostics("for(const a of {}) a=0;")
+			.assertDiagnostic(20, 21, "left operand is not assignable")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testAssignScopeAccessForEachLet() {
+		parseSingleStatementWithDiagnostics("for(let a of {}) a=0;")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testAssignScopeAccessForEachVar() {
+		parseSingleStatementWithDiagnostics("for(var a of {}) a=0;")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testAssignScopeAccessFunctionArguments() {
+		parseSingleStatementWithDiagnostics("function f() { arguments=0; }")
+			.assertDiagnostic(24, 25, "left operand is not assignable")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testAssignScopeAccessFunctionParameter() {
+		parseSingleStatementWithDiagnostics("function f(parameter) { parameter=0; }")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testAssignScopeAccessFunctionStatement() {
+		parseSingleStatementWithDiagnostics("{ function f() {} f=0; }")
+			.assertDiagnostic(19, 20, "left operand is not assignable")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testAssignScopeAccessVariablesConst() {
+		parseSingleStatementWithDiagnostics("{ const f=0; f=0; }")
+			.assertDiagnostic(14, 15, "left operand is not assignable")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testAssignScopeAccessVariablesLet() {
+		parseSingleStatementWithDiagnostics("{ let f; f=0; }")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testAssignScopeAccessVariablesVar() {
+		parseSingleStatementWithDiagnostics("{ var f; f=0; }")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testAssignTernaryExpression() {
 		// FIXME: add ternary
 	});
 
-	Tests.run(function testExtends() {
-		// FIXME: add array-access
+	Tests.run(function testExtendsArrayAccessExpression() {
+		parseSingleStatementWithDiagnostics("class C extends [][0] {}")
+			.assertNoMoreDiagnostic();
+	});
 
-		// FIXME: array literal
+	Tests.run(function testExtendsArrayLiteralExpression() {
 		parseSingleStatementWithDiagnostics("class C extends [] {}")
 			.assertDiagnostic(8, 15, "extends expression is not a class")
 			.assertNoMoreDiagnostic();
+	});
 
-		// FIXME: better test
-		parseSingleStatementWithDiagnostics("{ var a; class C extends a=a {} }")
+	Tests.run(function testExtendsAssignExpression() {
+		parseSingleStatementWithDiagnostics("{ var a; class C extends a=0 {} }")
 			.assertNoMoreDiagnostic();
+	});
 
+	Tests.run(function testExtendsClassExpression() {
 		parseSingleStatementWithDiagnostics("class C extends class {} {}")
 			.assertNoMoreDiagnostic();
+	});
 
+	Tests.run(function testExtendsFunctionExpression() {
 		parseSingleStatementWithDiagnostics("class C extends function() {} {}")
 			.assertNoMoreDiagnostic();
+	});
 
+	Tests.run(function testExtendsInfixExpression() {
 		parseSingleStatementWithDiagnostics("class C extends 1+1 {}")
 			.assertDiagnostic(8, 15, "extends expression is not a class")
 			.assertNoMoreDiagnostic();
+	});
 
+	Tests.run(function testExtendsLambdaExpression() {
 		parseSingleStatementWithDiagnostics("class C extends _=>undefined {}")
 			.assertDiagnostic(8, 15, "extends expression is not a class")
 			.assertNoMoreDiagnostic();
 		parseSingleStatementWithDiagnostics("class C extends ()=>undefined {}")
 			.assertDiagnostic(8, 15, "extends expression is not a class")
 			.assertNoMoreDiagnostic();
+	});
 
-		parseSingleStatementWithDiagnostics("{ var a; class C extends a=0 {} }")
+	Tests.run(function testExtendsLiteralExpression() {
+		parseSingleStatementWithDiagnostics("{ var a; class C extends 0 {} }")
 			.assertNoMoreDiagnostic();
+	});
 
-		// FIXME: add member-access
+	Tests.run(function testExtendsMemberAccessExpression() {
+		parseSingleStatementWithDiagnostics("class C extends (0).member {}")
+			.assertNoMoreDiagnostic();
+	});
 
+	Tests.run(function testExtendsObjectLiteralExpression() {
+		parseSingleStatementWithDiagnostics("class C extends {} {}")
+			.assertDiagnostic(8, 15, "extends expression is not a class")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testExtendsAssignPostfixExpression() {
 		parseSingleStatementWithDiagnostics("{ var a; class C extends a++ {} }")
 			.assertDiagnostic(17, 24, "extends expression is not a class")
 			.assertNoMoreDiagnostic();
 
+		parseSingleStatementWithDiagnostics("{ var a; class C extends a-- {} }")
+			.assertDiagnostic(17, 24, "extends expression is not a class")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testExtendsPrefixExpression() {
 		parseSingleStatementWithDiagnostics("{ var a; class C extends ++a {} }")
 			.assertDiagnostic(17, 24, "extends expression is not a class")
 			.assertNoMoreDiagnostic();
 
+		parseSingleStatementWithDiagnostics("{ var a; class C extends --a {} }")
+			.assertDiagnostic(17, 24, "extends expression is not a class")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testExtendsScopeAccessClassStatement() {
+		parseSingleStatementWithDiagnostics("{ class C {} class D extends C {} }")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testExtendsScopeAccessForEachConst() {
 		parseSingleStatementWithDiagnostics("for(const a of {}) class C extends a {};")
 			.assertNoMoreDiagnostic();
+	});
 
+	Tests.run(function testExtendsScopeAccessForEachLet() {
 		parseSingleStatementWithDiagnostics("for(let a of {}) class C extends a {};")
 			.assertNoMoreDiagnostic();
+	});
 
+	Tests.run(function testExtendsScopeAccessForEachVar() {
 		parseSingleStatementWithDiagnostics("for(var a of {}) class C extends a {};")
 			.assertNoMoreDiagnostic();
+	});
 
-		parseSingleStatementWithDiagnostics("{ function f() {} class C extends f {} }")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("function f(arg) { class C extends arg {} }")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("{ const f=0; class C extends f {} }")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("{ let f; class C extends f {} }")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("{ var f; class C extends f {} }")
-			.assertNoMoreDiagnostic();
-
+	Tests.run(function testExtendsScopeAccessFunctionArguments() {
 		parseSingleStatementWithDiagnostics("function f() { class C extends arguments {} }")
 			.assertDiagnostic(23, 30, "extends expression is not a class")
 			.assertNoMoreDiagnostic();
+	});
 
+	Tests.run(function testExtendsScopeAccessFunctionParameter() {
+		parseSingleStatementWithDiagnostics("function f(parameter) { class C extends parameter {} }")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testExtendsScopeAccessFunctionStatement() {
+		parseSingleStatementWithDiagnostics("{ function f() {} class C extends f {} }")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testExtendsScopeAccessVariablesConst() {
+		parseSingleStatementWithDiagnostics("{ const f=0; class C extends f {} }")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testExtendsScopeAccessVariablesLet() {
+		parseSingleStatementWithDiagnostics("{ let f; class C extends f {} }")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testExtendsScopeAccessVariablesVar() {
+		parseSingleStatementWithDiagnostics("{ var f; class C extends f {} }")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testExtendsTernaryExpression() {
 		// FIXME: add ternary
 	});
 
-	Tests.run(function testInvocation() {
-		// FIXME: add array-access
+	Tests.run(function testInvocationArrayAccessExpression() {
+		parseSingleStatementWithDiagnostics("[][0]();")
+			.assertNoMoreDiagnostic();
+	});
 
+	Tests.run(function testInvocationArrayLiteralExpression() {
 		parseSingleStatementWithDiagnostics("[]();")
 			.assertDiagnostic(2, 3, "cannot invoke operand")
 			.assertNoMoreDiagnostic();
+	});
 
+	Tests.run(function testInvocationAssignExpression() {
 		parseSingleStatementWithDiagnostics("{ var a; (a=function() {})(0); }")
 			.assertDiagnostic(26, 27, "expected at most 0 argument(s); got 1")
 			.assertNoMoreDiagnostic();
 		parseSingleStatementWithDiagnostics("{ var a; (a=[])(); }")
 			.assertDiagnostic(15, 16, "cannot invoke operand")
 			.assertNoMoreDiagnostic();
+	});
 
+	Tests.run(function testInvocationClassExpression() {
 		parseSingleStatementWithDiagnostics("(class {})();")
 			.assertDiagnostic(10, 11, "cannot invoke operand")
 			.assertNoMoreDiagnostic();
+	});
 
+	Tests.run(function testInvocationFunctionExpression() {
 		parseSingleStatementWithDiagnostics("(function() {})(0);")
 			.assertDiagnostic(15, 16, "expected at most 0 argument(s); got 1")
 			.assertNoMoreDiagnostic();
@@ -1737,13 +1859,15 @@
 		parseSingleStatementWithDiagnostics("(function(a, ...) {})();")
 			.assertDiagnostic(21, 22, "expected at least 1 argument(s); got 0")
 			.assertNoMoreDiagnostic();
+	});
 
+	Tests.run(function testInvocationInfixExpression() {
 		parseSingleStatementWithDiagnostics("(1+1)();")
 			.assertDiagnostic(5, 6, "cannot invoke operand")
 			.assertNoMoreDiagnostic();
+	});
 
-		// FIXME: add invocation
-
+	Tests.run(function testInvocationLambdaExpression() {
 		parseSingleStatementWithDiagnostics("(_=>undefined)();")
 			.assertDiagnostic(14, 15, "expected at least 1 argument(s); got 0")
 			.assertNoMoreDiagnostic();
@@ -1755,368 +1879,650 @@
 		parseSingleStatementWithDiagnostics("((a)=>undefined)();")
 			.assertDiagnostic(16, 17, "expected at least 1 argument(s); got 0")
 			.assertNoMoreDiagnostic();
+	});
 
+	Tests.run(function testInvocationLiteralExpression() {
 		parseSingleStatementWithDiagnostics("0();")
 			.assertDiagnostic(1, 2, "cannot invoke operand")
 			.assertNoMoreDiagnostic();
+	});
 
-		// FIXME: add member-access
+	Tests.run(function testInvocationMemberAccessExpression() {
+		parseSingleStatementWithDiagnostics("(0).member();")
+			.assertNoMoreDiagnostic();
+	});
 
+	Tests.run(function testInvocationObjectLiteralExpression() {
+		parseSingleStatementWithDiagnostics("({})();")
+			.assertDiagnostic(4, 5, "cannot invoke operand")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("({ member:0 }.member)();")
+			.assertDiagnostic(21, 22, "cannot invoke operand")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("({ member:function() {} }.member)(0);")
+			.assertDiagnostic(33, 34, "expected at most 0 argument(s); got 1")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testInvocationPostfixExpression() {
 		parseSingleStatementWithDiagnostics("a++();")
 			.assertDiagnostic(3, 4, "cannot invoke operand")
 			.assertNoMoreDiagnostic();
 
+		parseSingleStatementWithDiagnostics("a--();")
+			.assertDiagnostic(3, 4, "cannot invoke operand")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testInvocationPrefixExpression() {
 		parseSingleStatementWithDiagnostics("(++a)();")
 			.assertDiagnostic(5, 6, "cannot invoke operand")
 			.assertNoMoreDiagnostic();
 
-		parseSingleStatementWithDiagnostics("for(const a of {}) a();")
+		parseSingleStatementWithDiagnostics("(--a)();")
+			.assertDiagnostic(5, 6, "cannot invoke operand")
 			.assertNoMoreDiagnostic();
+	});
 
-		parseSingleStatementWithDiagnostics("for(let a of {}) a();")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("for(var a of {}) a();")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("{ function f() {} f(0); }")
-			.assertDiagnostic(19, 20, "expected at most 0 argument(s); got 1")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("{ const f=0; f(0); }")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("{ let f; f(0); }")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("{ var f; f(0); }")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("function f() { arguments(); }")
-			.assertDiagnostic(24, 25, "cannot invoke operand")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("function f(arg) { arg(); }")
-			.assertNoMoreDiagnostic();
-
+	Tests.run(function testInvocationScopeAccessClassStatement() {
 		parseSingleStatementWithDiagnostics("{ class C {} C(0); }")
 			.assertDiagnostic(14, 15, "cannot invoke operand")
 			.assertNoMoreDiagnostic();
+	});
 
+	Tests.run(function testInvocationScopeAccessForEachConst() {
+		parseSingleStatementWithDiagnostics("for(const a of {}) a();")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testInvocationScopeAccessForEachLet() {
+		parseSingleStatementWithDiagnostics("for(let a of {}) a();")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testInvocationScopeAccessForEachVar() {
+		parseSingleStatementWithDiagnostics("for(var a of {}) a();")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testInvocationScopeAccessFunctionArguments() {
+		parseSingleStatementWithDiagnostics("function f() { arguments(); }")
+			.assertDiagnostic(24, 25, "cannot invoke operand")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testInvocationScopeAccessFunctionParameter() {
+		parseSingleStatementWithDiagnostics("function f(parameter) { parameter(); }")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testInvocationScopeAccessFunctionStatement() {
+		parseSingleStatementWithDiagnostics("{ function f() {} f(0); }")
+			.assertDiagnostic(19, 20, "expected at most 0 argument(s); got 1")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testInvocationScopeAccessVariablesConst() {
+		parseSingleStatementWithDiagnostics("{ const f=0; f(0); }")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testInvocationScopeAccessVariablesLet() {
+		parseSingleStatementWithDiagnostics("{ let f; f(0); }")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testInvocationScopeAccessVariablesVar() {
+		parseSingleStatementWithDiagnostics("{ var f; f(0); }")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testInvocationTernaryExpression() {
 		// FIXME: add ternary
 	});
 
-	Tests.run(function testMemberAccess() {
-		// FIXME: add array-access
+	Tests.run(function testMemberAccessArrayAccessExpression() {
 		parseSingleStatementWithDiagnostics("{ [][0].member; }")
 			.assertNoMoreDiagnostic();
+	});
 
-		// FIXME: array literal
+	Tests.run(function testMemberAccessArrayLiteralExpression() {
 		parseSingleStatementWithDiagnostics("{ [].member; }")
 			.assertNoMoreDiagnostic();
+	});
 
+	Tests.run(function testMemberAccessAssignExpression() {
 		parseSingleStatementWithDiagnostics("{ var a; (a=0).member; }")
 			.assertNoMoreDiagnostic();
+	});
 
+	Tests.run(function testMemberAccessClassExpression() {
 		parseSingleStatementWithDiagnostics("(class {}).member;")
 			.assertDiagnostic(11, 17, "cannot resolve 'member'")
 			.assertNoMoreDiagnostic();
+	});
 
+	Tests.run(function testMemberAccessFunctionExpression() {
 		parseSingleStatementWithDiagnostics("(function() {}).member;")
 			.assertNoMoreDiagnostic();
+	});
 
+	Tests.run(function testMemberAccessInfixExpression() {
 		parseSingleStatementWithDiagnostics("(1+1).member;")
 			.assertNoMoreDiagnostic();
+	});
 
+	Tests.run(function testMemberAccessLambdaExpression() {
 		parseSingleStatementWithDiagnostics("(_=>undefined).member;")
 			.assertNoMoreDiagnostic();
 		parseSingleStatementWithDiagnostics("(()=>undefined).member;")
 			.assertNoMoreDiagnostic();
+	});
 
-		// FIXME: add member-access
+	Tests.run(function testMemberAccessLiteralExpression() {
+		parseSingleStatementWithDiagnostics("(1).member;")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testMemberAccessMemberAccessExpression() {
 		parseSingleStatementWithDiagnostics("{ var a; a.member.member; }")
 			.assertNoMoreDiagnostic();
+	});
 
+	Tests.run(function testMemberAccessObjectLiteralExpression() {
+		parseSingleStatementWithDiagnostics("({}).member;")
+			.assertDiagnostic(5, 11, "cannot resolve 'member'")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("({ member:0 }).member;")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testMemberAccessPostfixExpression() {
 		parseSingleStatementWithDiagnostics("{ var a; a++.member; }")
 			.assertNoMoreDiagnostic();
 
+		parseSingleStatementWithDiagnostics("{ var a; a--.member; }")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testMemberAccessPrefixExpression() {
 		parseSingleStatementWithDiagnostics("{ var a; ++a.member; }")
 			.assertNoMoreDiagnostic();
 
-		parseSingleStatementWithDiagnostics("for(const a of {}) a.member;")
+		parseSingleStatementWithDiagnostics("{ var a; --a.member; }")
 			.assertNoMoreDiagnostic();
+	});
 
-		parseSingleStatementWithDiagnostics("for(let a of {}) a.member;")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("for(var a of {}) a.member;")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("{ function f() {} f.member; }")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("{ const f=0; f.member; }")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("{ let f; f.member; }")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("{ var f; f.member; }")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("function f() { arguments.member; }")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("function f(arg) { arg.member; }")
-			.assertNoMoreDiagnostic();
-
+	Tests.run(function testMemberAccessScopeAccessClassStatement() {
 		parseSingleStatementWithDiagnostics("{ class C {} C.member; }")
 			.assertDiagnostic(15, 21, "cannot resolve 'member'")
 			.assertNoMoreDiagnostic();
+	});
 
+	Tests.run(function testMemberAccessScopeAccessForEachConst() {
+		parseSingleStatementWithDiagnostics("for(const a of {}) a.member;")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testMemberAccessScopeAccessForEachLet() {
+		parseSingleStatementWithDiagnostics("for(let a of {}) a.member;")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testMemberAccessScopeAccessForEachVar() {
+		parseSingleStatementWithDiagnostics("for(var a of {}) a.member;")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testMemberAccessScopeAccessFunctionArguments() {
+		parseSingleStatementWithDiagnostics("function f() { arguments.member; }")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testMemberAccessScopeAccessFunctionParameter() {
+		parseSingleStatementWithDiagnostics("function f(parameter) { parameter.member; }")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testMemberAccessScopeAccessFunctionStatement() {
+		parseSingleStatementWithDiagnostics("{ function f() {} f.member; }")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testMemberAccessScopeAccessVariablesConst() {
+		parseSingleStatementWithDiagnostics("{ const f=0; f.member; }")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testMemberAccessScopeAccessVariablesLet() {
+		parseSingleStatementWithDiagnostics("{ let f; f.member; }")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testMemberAccessScopeAccessVariablesVar() {
+		parseSingleStatementWithDiagnostics("{ var f; f.member; }")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testMemberAccessTernaryExpression() {
 		// FIXME: add ternary
 	});
 
-	Tests.run(function testPostfix() {
-		// FIXME: add array-access
+	Tests.run(function testPostfixArrayAccess() {
+		parseSingleStatementWithDiagnostics("[][0]++;")
+			.assertNoMoreDiagnostic();
 
-		// FIXME: add array-literal
+		parseSingleStatementWithDiagnostics("[][0]--;")
+			.assertNoMoreDiagnostic();
+	});
 
+	Tests.run(function testPostfixArrayLiteral() {
+		// FIXME: this should report an error
+		parseSingleStatementWithDiagnostics("[]++;")
+			.assertNoMoreDiagnostic();
+
+		// FIXME: this should report an error
+		parseSingleStatementWithDiagnostics("[]--;")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testPostfixAssignExpression() {
 		parseSingleStatementWithDiagnostics("{ var a; (a=a)++; }")
 			.assertDiagnostic(14, 16, "invalid increment/decrement operand")
 			.assertNoMoreDiagnostic();
 
+		parseSingleStatementWithDiagnostics("{ var a; (a=a)--; }")
+			.assertDiagnostic(14, 16, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testPostfixClassExpression() {
 		parseSingleStatementWithDiagnostics("(class {})++;")
 			.assertDiagnostic(10, 12, "invalid increment/decrement operand")
 			.assertNoMoreDiagnostic();
 
+		parseSingleStatementWithDiagnostics("(class {})--;")
+			.assertDiagnostic(10, 12, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testPostfixFunctionExpression() {
 		parseSingleStatementWithDiagnostics("(function() {})++;")
 			.assertDiagnostic(15, 17, "invalid increment/decrement operand")
 			.assertNoMoreDiagnostic();
 
+		parseSingleStatementWithDiagnostics("(function() {})--;")
+			.assertDiagnostic(15, 17, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testPostfixInfixExpression() {
 		parseSingleStatementWithDiagnostics("(1+1)++;")
 			.assertDiagnostic(5, 7, "invalid increment/decrement operand")
 			.assertNoMoreDiagnostic();
 
-		parseSingleStatementWithDiagnostics("(function() {})++;")
-			.assertDiagnostic(15, 17, "invalid increment/decrement operand")
+		parseSingleStatementWithDiagnostics("(1+1)--;")
+			.assertDiagnostic(5, 7, "invalid increment/decrement operand")
 			.assertNoMoreDiagnostic();
+	});
 
+	Tests.run(function testPostfixLambdaExpression() {
 		parseSingleStatementWithDiagnostics("(_=>undefined)++;")
 			.assertDiagnostic(14, 16, "invalid increment/decrement operand")
 			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("(()=>undefined)++;")
+			.assertDiagnostic(15, 17, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
 
+		parseSingleStatementWithDiagnostics("(_=>undefined)--;")
+			.assertDiagnostic(14, 16, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("(()=>undefined)--;")
+			.assertDiagnostic(15, 17, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testPostfixLiteralExpression() {
 		parseSingleStatementWithDiagnostics("0++;")
 			.assertDiagnostic(1, 3, "invalid increment/decrement operand")
 			.assertNoMoreDiagnostic();
 
-		// FIXME: add member-access
+		parseSingleStatementWithDiagnostics("0--;")
+			.assertDiagnostic(1, 3, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+	});
 
+	Tests.run(function testPostfixMemberAccessExpression() {
+		parseSingleStatementWithDiagnostics("[][0]++;")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("[][0]--;")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testPostfixObjectLiteralExpression() {
+		parseSingleStatementWithDiagnostics("({})++;")
+			.assertDiagnostic(4, 6, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("({})--;")
+			.assertDiagnostic(4, 6, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testPostfixPostfixExpression() {
 		parseSingleStatementWithDiagnostics("{ var a; a++++; }")
 			.assertDiagnostic(12, 14, "invalid increment/decrement operand")
 			.assertNoMoreDiagnostic();
 
+		parseSingleStatementWithDiagnostics("{ var a; a----; }")
+			.assertDiagnostic(12, 14, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testPostfixPrefixExpression() {
 		parseSingleStatementWithDiagnostics("{ var a; (++a)++; }")
 			.assertDiagnostic(14, 16, "invalid increment/decrement operand")
 			.assertNoMoreDiagnostic();
 
-		parseSingleStatementWithDiagnostics("for(const a of {}) a++;")
-			.assertDiagnostic(20, 22, "invalid increment/decrement operand")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("for(let a of {}) a++;")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("for(var a of {}) a++;")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("{ function f() {} f++; }")
-			.assertDiagnostic(19, 21, "invalid increment/decrement operand")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("{ const f=0; f++; }")
+		parseSingleStatementWithDiagnostics("{ var a; (--a)--; }")
 			.assertDiagnostic(14, 16, "invalid increment/decrement operand")
 			.assertNoMoreDiagnostic();
+	});
 
-		parseSingleStatementWithDiagnostics("{ let f; f++; }")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("{ var f; f++; }")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("function f() { arguments++; }")
-			.assertDiagnostic(24, 26, "invalid increment/decrement operand")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("function f(arg) { arg++; }")
-			.assertNoMoreDiagnostic();
-
+	Tests.run(function testPostfixScopeAccessClassStatement() {
 		parseSingleStatementWithDiagnostics("{ class C {} C++; }")
 			.assertDiagnostic(14, 16, "invalid increment/decrement operand")
 			.assertNoMoreDiagnostic();
 
+		parseSingleStatementWithDiagnostics("{ class C {} C--; }")
+			.assertDiagnostic(14, 16, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testPostfixScopeAccessForEachConst() {
+		parseSingleStatementWithDiagnostics("for(const a of {}) a++;")
+			.assertDiagnostic(20, 22, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("for(const a of {}) a--;")
+			.assertDiagnostic(20, 22, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testPostfixScopeAccessForEachLet() {
+		parseSingleStatementWithDiagnostics("for(let a of {}) a++;")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("for(let a of {}) a--;")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testPostfixScopeAccessForEachVar() {
+		parseSingleStatementWithDiagnostics("for(var a of {}) a++;")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("for(var a of {}) a--;")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testPostfixScopeAccessFunctionArguments() {
+		parseSingleStatementWithDiagnostics("function f() { arguments++; }")
+			.assertDiagnostic(24, 26, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("function f() { arguments--; }")
+			.assertDiagnostic(24, 26, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testPostfixScopeAccessFunctionParameter() {
+		parseSingleStatementWithDiagnostics("function f(parameter) { parameter++; }")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("function f(parameter) { parameter--; }")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testPostfixScopeAccessFunctionStatement() {
+		parseSingleStatementWithDiagnostics("{ function f() {} f++; }")
+			.assertDiagnostic(19, 21, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ function f() {} f--; }")
+			.assertDiagnostic(19, 21, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testPostfixScopeAccessVariablesConst() {
+		parseSingleStatementWithDiagnostics("{ const f=0; f++; }")
+			.assertDiagnostic(14, 16, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ const f=0; f--; }")
+			.assertDiagnostic(14, 16, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testPostfixScopeAccessVariablesLet() {
+		parseSingleStatementWithDiagnostics("{ let f; f++; }")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ let f; f--; }")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testPostfixScopeAccessVariablesVar() {
+		parseSingleStatementWithDiagnostics("{ var f; f++; }")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("{ var f; f--; }")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testPostfixTernaryExpression() {
 		// FIXME: add ternary
 	});
 
-	Tests.run(function testPrefixDecrement() {
-		// FIXME: add array-access
+	Tests.run(function testPrefixArrayAccessExpression() {
+		parseSingleStatementWithDiagnostics("++[][0];")
+			.assertNoMoreDiagnostic();
 
-		// FIXME: add array-literal
+		parseSingleStatementWithDiagnostics("--[][0];")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testPrefixArrayLiteralExpression() {
+		// FIXME: this should report an error
+		parseSingleStatementWithDiagnostics("++[];")
+			.assertNoMoreDiagnostic();
+
+		// FIXME: this should report an error
+		parseSingleStatementWithDiagnostics("--[];")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testPrefixAssignExpression() {
+		parseSingleStatementWithDiagnostics("{ var a; ++(a=a); }")
+			.assertDiagnostic(9, 11, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
 
 		parseSingleStatementWithDiagnostics("{ var a; --(a=a); }")
 			.assertDiagnostic(9, 11, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testPrefixClassExpression() {
+		parseSingleStatementWithDiagnostics("++(class {});")
+			.assertDiagnostic(0, 2, "invalid increment/decrement operand")
 			.assertNoMoreDiagnostic();
 
 		parseSingleStatementWithDiagnostics("--(class {});")
 			.assertDiagnostic(0, 2, "invalid increment/decrement operand")
 			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testPrefixFunctionExpression() {
+		parseSingleStatementWithDiagnostics("++(function() {});")
+			.assertDiagnostic(0, 2, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
 
 		parseSingleStatementWithDiagnostics("--(function() {});")
+			.assertDiagnostic(0, 2, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testPrefixInfixExpression() {
+		parseSingleStatementWithDiagnostics("++(1+1);")
 			.assertDiagnostic(0, 2, "invalid increment/decrement operand")
 			.assertNoMoreDiagnostic();
 
 		parseSingleStatementWithDiagnostics("--(1+1);")
 			.assertDiagnostic(0, 2, "invalid increment/decrement operand")
 			.assertNoMoreDiagnostic();
+	});
 
-		parseSingleStatementWithDiagnostics("--(function() {});")
+	Tests.run(function testPrefixLambdaExpression() {
+		parseSingleStatementWithDiagnostics("++(_=>undefined);")
 			.assertDiagnostic(0, 2, "invalid increment/decrement operand")
 			.assertNoMoreDiagnostic();
 
 		parseSingleStatementWithDiagnostics("--(_=>undefined);")
 			.assertDiagnostic(0, 2, "invalid increment/decrement operand")
 			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testPrefixLiteralExpression() {
+		parseSingleStatementWithDiagnostics("++0;")
+			.assertDiagnostic(0, 2, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
 
 		parseSingleStatementWithDiagnostics("--0;")
 			.assertDiagnostic(0, 2, "invalid increment/decrement operand")
 			.assertNoMoreDiagnostic();
+	});
 
-		// FIXME: add member-access
+	Tests.run(function testPrefixMemberAccessExpression() {
+		parseSingleStatementWithDiagnostics("++(0).member;")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("--(0).member;")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testPrefixObjectLiteralExpression() {
+		parseSingleStatementWithDiagnostics("++{};")
+			.assertDiagnostic(0, 2, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("--{};")
+			.assertDiagnostic(0, 2, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testPrefixPostfixExpression() {
+		parseSingleStatementWithDiagnostics("{ var a; ++++a; }")
+			.assertDiagnostic(9, 11, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
 
 		parseSingleStatementWithDiagnostics("{ var a; ----a; }")
 			.assertDiagnostic(9, 11, "invalid increment/decrement operand")
 			.assertNoMoreDiagnostic();
+	});
 
+	Tests.run(function testPrefixPrefixExpression() {
+		parseSingleStatementWithDiagnostics("{ var a; ++a++; }")
+			.assertDiagnostic(9, 11, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
 		parseSingleStatementWithDiagnostics("{ var a; --a--; }")
 			.assertDiagnostic(9, 11, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testPrefixScopeAccessClassStatement() {
+		parseSingleStatementWithDiagnostics("{ class C {} ++C; }")
+			.assertDiagnostic(13, 15, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("{ class C {} --C; }")
+			.assertDiagnostic(13, 15, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testPrefixScopeAccessForEachConst() {
+		parseSingleStatementWithDiagnostics("for(const a of {}) ++a;")
+			.assertDiagnostic(19, 21, "invalid increment/decrement operand")
 			.assertNoMoreDiagnostic();
 
 		parseSingleStatementWithDiagnostics("for(const a of {}) --a;")
 			.assertDiagnostic(19, 21, "invalid increment/decrement operand")
 			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("for(let a of {}) --a;")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("for(var a of {}) --a;")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("{ function f() {} --f; }")
-			.assertDiagnostic(18, 20, "invalid increment/decrement operand")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("{ const f=0; --f; }")
-			.assertDiagnostic(13, 15, "invalid increment/decrement operand")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("{ let f; --f; }")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("{ var f; --f; }")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("function f() { --arguments; }")
-			.assertDiagnostic(15, 17, "invalid increment/decrement operand")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("function f(arg) { --arg; }")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("{ class C {} --C; }")
-			.assertDiagnostic(13, 15, "invalid increment/decrement operand")
-			.assertNoMoreDiagnostic();
-
-		// FIXME: add ternary
 	});
 
-	Tests.run(function testPrefixIncrement() {
-		// FIXME: add array-access
-
-		// FIXME: add array-literal
-
-		parseSingleStatementWithDiagnostics("{ var a; ++(a=a); }")
-			.assertDiagnostic(9, 11, "invalid increment/decrement operand")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("++(class {});")
-			.assertDiagnostic(0, 2, "invalid increment/decrement operand")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("++(function() {});")
-			.assertDiagnostic(0, 2, "invalid increment/decrement operand")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("++(1+1);")
-			.assertDiagnostic(0, 2, "invalid increment/decrement operand")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("++(function() {});")
-			.assertDiagnostic(0, 2, "invalid increment/decrement operand")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("++(_=>undefined);")
-			.assertDiagnostic(0, 2, "invalid increment/decrement operand")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("++0;")
-			.assertDiagnostic(0, 2, "invalid increment/decrement operand")
-			.assertNoMoreDiagnostic();
-
-		// FIXME: add member-access
-
-		parseSingleStatementWithDiagnostics("{ var a; ++++a; }")
-			.assertDiagnostic(9, 11, "invalid increment/decrement operand")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("{ var a; ++a++; }")
-			.assertDiagnostic(9, 11, "invalid increment/decrement operand")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("for(const a of {}) ++a;")
-			.assertDiagnostic(19, 21, "invalid increment/decrement operand")
-			.assertNoMoreDiagnostic();
-
+	Tests.run(function testPrefixScopeAccessForEachLet() {
 		parseSingleStatementWithDiagnostics("for(let a of {}) ++a;")
 			.assertNoMoreDiagnostic();
 
+		parseSingleStatementWithDiagnostics("for(let a of {}) --a;")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testPrefixScopeAccessForEachVar() {
 		parseSingleStatementWithDiagnostics("for(var a of {}) ++a;")
 			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("{ function f() {} ++f; }")
-			.assertDiagnostic(18, 20, "invalid increment/decrement operand")
+		parseSingleStatementWithDiagnostics("for(var a of {}) --a;")
 			.assertNoMoreDiagnostic();
+	});
 
-		parseSingleStatementWithDiagnostics("{ const f=0; ++f; }")
-			.assertDiagnostic(13, 15, "invalid increment/decrement operand")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("{ let f; ++f; }")
-			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("{ var f; ++f; }")
-			.assertNoMoreDiagnostic();
-
+	Tests.run(function testPrefixScopeAccessFunctionArguments() {
 		parseSingleStatementWithDiagnostics("function f() { ++arguments; }")
 			.assertDiagnostic(15, 17, "invalid increment/decrement operand")
 			.assertNoMoreDiagnostic();
-
-		parseSingleStatementWithDiagnostics("function f(arg) { ++arg; }")
+		parseSingleStatementWithDiagnostics("function f() { --arguments; }")
+			.assertDiagnostic(15, 17, "invalid increment/decrement operand")
 			.assertNoMoreDiagnostic();
+	});
 
-		parseSingleStatementWithDiagnostics("{ class C {} ++C; }")
+	Tests.run(function testPrefixScopeAccessFunctionParameter() {
+		parseSingleStatementWithDiagnostics("function f(parameter) { ++parameter; }")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("function f(parameter) { --parameter; }")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testPrefixScopeAccessFunctionStatement() {
+		parseSingleStatementWithDiagnostics("{ function f() {} ++f; }")
+			.assertDiagnostic(18, 20, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("{ function f() {} --f; }")
+			.assertDiagnostic(18, 20, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testPrefixScopeAccessVariablesConst() {
+		parseSingleStatementWithDiagnostics("{ const f=0; ++f; }")
 			.assertDiagnostic(13, 15, "invalid increment/decrement operand")
 			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("{ const f=0; --f; }")
+			.assertDiagnostic(13, 15, "invalid increment/decrement operand")
+			.assertNoMoreDiagnostic();
+	});
 
+	Tests.run(function testPrefixScopeAccessVariablesLet() {
+		parseSingleStatementWithDiagnostics("{ let f; ++f; }")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("{ let f; --f; }")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testPrefixScopeAccessVariablesVar() {
+		parseSingleStatementWithDiagnostics("{ var f; ++f; }")
+			.assertNoMoreDiagnostic();
+		parseSingleStatementWithDiagnostics("{ var f; --f; }")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testPrefixTernaryExpression() {
 		// FIXME: add ternary
 	});
 

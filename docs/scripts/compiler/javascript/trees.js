@@ -722,13 +722,14 @@ function defineJavascriptTrees(Compiler) {
 		buildScope(analyzer, parentScope) {
 			this.members=new Map();
 			for(const memberTree of this.memberTrees)
-				memberTree.buildScope(analyzer, parentScope, this.members);
+				memberTree.buildScope(analyzer, parentScope, this);
 			Object.freeze(this);
 		}
 
 		resolve(analyzer) {
 			for(const memberTree of this.memberTrees)
 				memberTree.resolve(analyzer);
+			return this;
 		}
 
 		generate(generator) {
@@ -742,7 +743,16 @@ function defineJavascriptTrees(Compiler) {
 
 		isAssignable() { return false; }
 
+		isClass() { return false; }
+
 		isFunction() { return false; }
+
+		resolveMemberAccess(analyzer, nameToken) {
+			const result=this.members.get(nameToken.text);
+			if(result===undefined)
+				analyzer.newDiagnostic(nameToken, "cannot resolve '"+nameToken.text+"'");
+			return result;
+		}
 
 	});
 
@@ -1306,7 +1316,7 @@ function defineJavascriptTrees(Compiler) {
 
 		kind() { return "object-literal-computed-key"; }
 
-		buildScope(analyzer, parentScope) {
+		buildScope(analyzer, parentScope, literal) {
 			this.keyTree.buildScope(analyzer, parentScope);
 			this.valueTree.buildScope(analyzer, parentScope);
 		}
@@ -1353,9 +1363,11 @@ function defineJavascriptTrees(Compiler) {
 
 		kind() { return "object-literal-literal-key"; }
 
-		buildScope(analyzer, parentScope, names) {
-			if(!names.set(this.keyToken.text))
+		buildScope(analyzer, parentScope, literal) {
+			if(literal.members.has(this.keyToken.text))
 				analyzer.newDiagnostic(this.keyToken, "redefinition of "+this.keyToken.text+"'");
+			else
+				literal.members.set(this.keyToken.text, this.valueTree);
 			this.valueTree.buildScope(analyzer, parentScope);
 		}
 
@@ -1382,7 +1394,11 @@ function defineJavascriptTrees(Compiler) {
 
 		kind() { return "object-literal-method"; }
 
-		buildScope(analyzer, parentScope) {
+		buildScope(analyzer, parentScope, literal) {
+			if(literal.members.has(this.nameToken.text))
+				analyzer.newDiagnostic(this.nameToken, "redefinition of "+this.nameToken.text+"'");
+			else
+				literal.members.set(this.nameToken.text, this);
 			this.parameters=this.parametersTree.buildParameters(analyzer);
 			this.vars=new Map();
 			this.blockTree.buildScope(analyzer, new Scope.Function(parentScope, this));
