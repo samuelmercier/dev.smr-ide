@@ -74,7 +74,7 @@ function defineJavascriptParser(Compiler) {
 		"case", "char", "class", "const", "continue",
 		"debugger", "default", "do", "double",
 		"else", "eval", "false", "finally", "float", "for", "function",
-		"goto",
+		"get", "goto",
 		"if", "implements", "in", "instanceof", "int", "interface",
 		"let", "long",
 		"new", "null",
@@ -86,7 +86,7 @@ function defineJavascriptParser(Compiler) {
 	]);
 
 	/** keywords allowed as member name (after a dot). */
-	const memberNameKeywords=new Set([ "for", "return", "this", "throw" ]);
+	const memberNameKeywords=new Set([ "for", "get", "return", "this", "throw" ]);
 
 	/** operands. */
 	const operandKeywords=new Set([ "class", "false", "function", "null", "this", "true" ]);
@@ -452,11 +452,37 @@ function defineJavascriptParser(Compiler) {
 				const annotationTrees=parseAnnotations();
 				const annotationsTree=annotationTrees.length!==0 ? new Compiler.JavascriptTrees.Annotations(annotationTrees) : undefined;
 				const staticToken=checkKeyword("static");
+				const getToken=checkKeyword("get");
+				if(getToken!==undefined) {
+					/* strictly speaking a member definition starting with get is a getter but we allow
+					get as valid method name to properly handle the source definition of Map.get. */
+					let keywordToken=checkKeywords(memberNameKeywords);
+					const nameToken=keywordToken!==undefined ? keywordToken : checkIdentifier();
+					if(nameToken!==undefined)
+						memberTrees.push(new Compiler.JavascriptTrees.ClassGetter(
+							annotationsTree,
+							staticToken,
+							getToken,
+							nameToken,
+							expectPunctuator("("),
+							expectPunctuator(")"),
+							parseBlock(undefined, expectPunctuator("{"))
+						));
+					else
+						memberTrees.push(new Compiler.JavascriptTrees.ClassMethod(
+							annotationsTree,
+							staticToken,
+							getToken,
+							parseFunctionParameters(expectPunctuator("(")),
+							parseBlock(undefined, expectPunctuator("{"))
+						));
+					continue;
+				}
 				let keywordToken=checkKeywords(memberNameKeywords);
 				const nameToken=keywordToken!==undefined ? keywordToken : annotationsTree!==undefined||staticToken!==undefined ? expectIdentifier() : checkIdentifier();
 				if(nameToken===undefined)
 					return memberTrees;
-				memberTrees.push(new Compiler.JavascriptTrees.Method(
+				memberTrees.push(new Compiler.JavascriptTrees.ClassMethod(
 					annotationsTree,
 					staticToken,
 					nameToken,

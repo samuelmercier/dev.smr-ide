@@ -134,6 +134,58 @@
 		Assertions.assertUndefined(parseSingleExpression("class", "class MyClass {}").classTree.extendsClauseTree);
 	});
 
+	Tests.run(function testParseExpressionClassGetter() {
+		const tree=parseSingleExpression("class", "class MyClass { get field() {} }").classTree;
+		Assertions.assertEqual(tree.memberTrees.length, 1);
+		Assertions.assertUndefined(tree.memberTrees[0].annotationsTree);
+		Assertions.assertUndefined(tree.memberTrees[0].staticToken);
+		assertKeyword(tree.memberTrees[0].getToken, "get");
+		assertIdentifier(tree.memberTrees[0].nameToken, "field");
+		assertPunctuator(tree.memberTrees[0].openParenthesisToken, "(");
+		assertPunctuator(tree.memberTrees[0].closeParenthesisToken, ")");
+		Assertions.assertEqual(tree.memberTrees[0].blockTree.kind(), "block");
+	});
+
+	/* strictly speaking a member definition starting with get is a getter but we allow
+	get as valid method name to properly handle the source definition of Map.get. */
+	Tests.run(function testParseExpressionClassGetMethod() {
+		const tree=parseSingleExpression("class", "class MyClass { get() {} }").classTree;
+		Assertions.assertEqual(tree.memberTrees.length, 1);
+		Assertions.assertUndefined(tree.memberTrees[0].annotationsTree);
+		Assertions.assertUndefined(tree.memberTrees[0].staticToken);
+		Assertions.assertUndefined(tree.memberTrees[0].getToken);
+		assertIdentifier(tree.memberTrees[0].nameToken, "get");
+		assertPunctuator(tree.memberTrees[0].parametersTree.openParenthesisToken, "(");
+		assertPunctuator(tree.memberTrees[0].parametersTree.closeParenthesisToken, ")");
+		Assertions.assertEqual(tree.memberTrees[0].blockTree.kind(), "block");
+	});
+
+	Tests.run(function testParseExpressionClassStaticGetter() {
+		const tree=parseSingleExpression("class", "class MyClass { @annotation static get field() {} }").classTree;
+		Assertions.assertEqual(tree.memberTrees.length, 1);
+		Assertions.assertEqual(tree.memberTrees[0].annotationsTree.annotationTrees.length, 1);
+		assertKeyword(tree.memberTrees[0].staticToken, "static");
+		assertKeyword(tree.memberTrees[0].getToken, "get");
+		assertIdentifier(tree.memberTrees[0].nameToken, "field");
+		assertPunctuator(tree.memberTrees[0].openParenthesisToken, "(");
+		assertPunctuator(tree.memberTrees[0].closeParenthesisToken, ")");
+		Assertions.assertEqual(tree.memberTrees[0].blockTree.kind(), "block");
+	});
+
+	/* strictly speaking a member definition starting with get is a getter but we allow
+	get as valid method name to properly handle the source definition of Map.get. */
+	Tests.run(function testParseExpressionClassStaticGetMethod() {
+		const tree=parseSingleExpression("class", "class MyClass { @annotation static get() {} }").classTree;
+		Assertions.assertEqual(tree.memberTrees.length, 1);
+		Assertions.assertEqual(tree.memberTrees[0].annotationsTree.annotationTrees.length, 1);
+		assertKeyword(tree.memberTrees[0].staticToken, "static");
+		Assertions.assertUndefined(tree.memberTrees[0].getToken);
+		assertIdentifier(tree.memberTrees[0].nameToken, "get");
+		assertPunctuator(tree.memberTrees[0].parametersTree.openParenthesisToken, "(");
+		assertPunctuator(tree.memberTrees[0].parametersTree.closeParenthesisToken, ")");
+		Assertions.assertEqual(tree.memberTrees[0].blockTree.kind(), "block");
+	});
+
 	Tests.run(function testParseExpressionClassMethod() {
 		const tree=parseSingleExpression("class", "class MyClass { method(@optional a, b) {} }");
 		Assertions.assertEqual(tree.classTree.memberTrees[0].parametersTree.getMinParameterCount(), 1);
@@ -276,6 +328,7 @@
 		assertIdentifier(tree.nameToken, "memberName");
 
 		assertIdentifier(parseSingleExpression("member-access", "expression.for").nameToken, "for");
+		assertIdentifier(parseSingleExpression("member-access", "expression.get").nameToken, "get");
 		assertIdentifier(parseSingleExpression("member-access", "expression.return").nameToken, "return");
 		assertIdentifier(parseSingleExpression("member-access", "expression.this").nameToken, "this");
 		assertIdentifier(parseSingleExpression("member-access", "expression.throw").nameToken, "throw");

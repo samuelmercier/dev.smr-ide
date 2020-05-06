@@ -200,6 +200,160 @@ function defineJavascriptTrees(Compiler) {
 
 	}),
 
+	Trees.ClassEntry=Object.freeze(class Entry {
+
+		kind() { return "class-entry"; }
+
+		/* *** semantic part. *** */
+
+		isAssignable() { return this.setter!==undefined; }
+
+		isClass() { return this.method!==undefined ? false : undefined; }
+
+		getFunction() { return this.method; }
+
+		isFunction() { return this.method!==undefined ? true : undefined; }
+
+		resolveMemberAccess(analyzer, nameToken) { return undefined; }
+
+	}),
+
+	Trees.ClassGetter=Object.freeze(class Getter {
+
+		constructor(annotationsTree, staticToken, getToken, nameToken, openParenthesisToken, closeParenthesisToken, blockTree) {
+			this.annotationsTree=annotationsTree;
+			this.staticToken=staticToken;
+			this.getToken=getToken;
+			this.nameToken=nameToken;
+			this.openParenthesisToken=openParenthesisToken;
+			this.closeParenthesisToken=closeParenthesisToken;
+			this.blockTree=blockTree;
+		}
+
+		kind() { return "class-getter-definition"; }
+
+		buildScope(analyzer, parentScope, classTree) {
+			this.classTree=classTree;
+			if(this.staticToken===undefined) {
+				let entry=classTree.members.get(this.nameToken.text);
+				if(entry===undefined)
+					classTree.members.set(this.nameToken.text, entry=new Trees.ClassEntry());
+				if(entry.getter!==undefined)
+					analyzer.newDiagnostic(this.nameToken, "redefinition of getter '"+this.nameToken.text+"'");
+				else if(entry.method!==undefined)
+					analyzer.newDiagnostic(this.nameToken, "'"+this.nameToken.text+"' was previously defined as a method");
+				else
+					entry.getter=this;
+			}
+			else {
+				let entry=classTree.statics.get(this.nameToken.text);
+				if(entry===undefined)
+					classTree.statics.set(this.nameToken.text, entry=new Trees.ClassEntry());
+				if(entry.getter!==undefined)
+					analyzer.newDiagnostic(this.nameToken, "redefinition of static getter '"+this.nameToken.text+"'");
+				else if(entry.method!==undefined)
+					analyzer.newDiagnostic(this.nameToken, "'"+this.nameToken.text+"' was previously defined as a static method");
+				else
+					entry.getter=this;
+			}
+			this.vars=new Map();
+			Object.freeze(this);
+			this.blockTree.buildScope(analyzer, new Scope.Function(parentScope, this));
+		}
+
+		resolve(analyzer) {
+			this.vars.set("arguments", new Compiler.Javascript.Element.Declaration.Arguments());
+			if(this.classTree.baseClass!==undefined)
+				this.vars.set("super", new Compiler.Javascript.Element.Expression.InstanceReference(this.classTree.baseClass));
+			this.vars.set("this",new Compiler.Javascript.Element.Expression.InstanceReference(this.classTree));
+			this.vars.set(this.nameToken.text, this);
+			this.blockTree.resolve(analyzer);
+		}
+
+		generate(generator) {
+			if(this.annotationsTree!==undefined)
+				this.annotationsTree.generate(generator);
+			if(this.staticToken!==undefined)
+				generator.generate(this.staticToken);
+			generator.generate(this.getToken);
+			generator.generate(this.nameToken);
+			generator.generate(this.openParenthesisToken);
+			generator.generate(this.closeParenthesisToken);
+			this.blockTree.generate(generator);
+		}
+
+	});
+
+	Trees.ClassMethod=Object.freeze(class ClassMethod {
+
+		constructor(annotationsTree, staticToken, nameToken, parametersTree, blockTree) {
+			this.annotationsTree=annotationsTree;
+			this.staticToken=staticToken;
+			this.nameToken=nameToken;
+			this.parametersTree=parametersTree;
+			this.blockTree=blockTree;
+		}
+
+		kind() { return "class-method-definition"; }
+
+		buildScope(analyzer, parentScope, classTree) {
+			this.classTree=classTree;
+			if(this.staticToken===undefined) {
+				if(this.nameToken.text==="constructor")
+					if(classTree.initializer!==undefined)
+						analyzer.newDiagnostic(this.nameToken, "redefinition of 'constructor'");
+					else
+						classTree.initializer=this;
+				else {
+					let entry=classTree.members.get(this.nameToken.text);
+					if(entry===undefined)
+						classTree.members.set(this.nameToken.text, entry=new Trees.ClassEntry());
+					if(entry.getter!==undefined)
+						analyzer.newDiagnostic(this.nameToken, "'"+this.nameToken.text+"' was previously defined as getter/setter");
+					else if(entry.method!==undefined)
+						analyzer.newDiagnostic(this.nameToken, "redefinition of method '"+this.nameToken.text+"'");
+					else
+						entry.method=this;
+				}
+			}
+			else {
+				let entry=classTree.statics.get(this.nameToken.text);
+				if(entry===undefined)
+					classTree.statics.set(this.nameToken.text, entry=new Trees.ClassEntry());
+				if(entry.getter!==undefined)
+					analyzer.newDiagnostic(this.nameToken, "'"+this.nameToken.text+"' was previously defined as static getter/setter");
+				else if(entry.method!==undefined)
+					analyzer.newDiagnostic(this.nameToken, "redefinition of static method '"+this.nameToken.text+"'");
+				else
+					entry.method=this;
+			}
+			this.parameters=this.parametersTree.buildParameters(analyzer);
+			this.vars=new Map();
+			Object.freeze(this);
+			this.blockTree.buildScope(analyzer, new Scope.Function(parentScope, this));
+		}
+
+		resolve(analyzer) {
+			this.vars.set("arguments", new Compiler.Javascript.Element.Declaration.Arguments());
+			if(this.classTree.baseClass!==undefined)
+				this.vars.set("super", new Compiler.Javascript.Element.Expression.InstanceReference(this.classTree.baseClass));
+			this.vars.set("this",new Compiler.Javascript.Element.Expression.InstanceReference(this.classTree));
+			this.vars.set(this.nameToken.text, this);
+			this.blockTree.resolve(analyzer);
+		}
+
+		generate(generator) {
+			if(this.annotationsTree!==undefined)
+				this.annotationsTree.generate(generator);
+			if(this.staticToken!==undefined)
+				generator.generate(this.staticToken);
+			generator.generate(this.nameToken);
+			this.parametersTree.generate(generator);
+			this.blockTree.generate(generator);
+		}
+
+	});
+
 	Trees.Declarator=class Declarator {
 
 		constructor(precedingCommaToken, nameToken, initializerTree) {
@@ -1394,74 +1548,6 @@ function defineJavascriptTrees(Compiler) {
 		getMaxParameterCount() { return 1; }
 
 		getMinParameterCount() { return 1; }
-
-	});
-
-	Trees.Method=Object.freeze(class Method {
-
-		constructor(annotationsTree, staticToken, nameToken, parametersTree, blockTree) {
-			this.annotationsTree=annotationsTree;
-			this.staticToken=staticToken;
-			this.nameToken=nameToken;
-			this.parametersTree=parametersTree;
-			this.blockTree=blockTree;
-		}
-
-		kind() { return "method-definition"; }
-
-		buildScope(analyzer, parentScope, classTree) {
-			this.classTree=classTree;
-			if(this.staticToken===undefined)
-				if(this.nameToken.text==="constructor")
-					if(classTree.initializer!==undefined)
-						analyzer.newDiagnostic(this.nameToken, "redefinition of 'constructor'");
-					else
-						classTree.initializer=this;
-				else if(classTree.members.has(this.nameToken.text))
-					analyzer.newDiagnostic(this.nameToken, "redefinition of '"+this.nameToken.text+"'");
-				else
-					classTree.members.set(this.nameToken.text, this);
-			else
-				if(classTree.statics.has(this.nameToken.text))
-					analyzer.newDiagnostic(this.nameToken, "redefinition of static '"+this.nameToken.text+"'");
-				else
-					classTree.statics.set(this.nameToken.text, this);
-			this.parameters=this.parametersTree.buildParameters(analyzer);
-			this.vars=new Map();
-			Object.freeze(this);
-			this.blockTree.buildScope(analyzer, new Scope.Function(parentScope, this));
-		}
-
-		resolve(analyzer) {
-			this.vars.set("arguments", new Compiler.Javascript.Element.Declaration.Arguments());
-			if(this.classTree.baseClass!==undefined)
-				this.vars.set("super", new Compiler.Javascript.Element.Expression.InstanceReference(this.classTree.baseClass));
-			this.vars.set("this",new Compiler.Javascript.Element.Expression.InstanceReference(this.classTree));
-			this.vars.set(this.nameToken.text, this);
-			this.blockTree.resolve(analyzer);
-		}
-
-		generate(generator) {
-			if(this.annotationsTree!==undefined)
-				this.annotationsTree.generate(generator);
-			if(this.staticToken!==undefined)
-				generator.generate(this.staticToken);
-			generator.generate(this.nameToken);
-			this.parametersTree.generate(generator);
-			this.blockTree.generate(generator);
-		}
-
-		/* *** semantic part. *** */
-
-		isAssignable() { return false; }
-
-		isClass() { return false; }
-
-		getFunction() { return this; }
-
-		isFunction() { return true; }
-
-		resolveMemberAccess(analyzer, nameToken) { return undefined; }
 
 	});
 

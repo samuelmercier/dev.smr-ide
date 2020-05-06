@@ -104,8 +104,14 @@
 		assertGenerateSingleStatement(" a ? b : c ;");
 	});
 
-	Tests.run(function testGenerateMethod() {
-		assertGenerateSingleStatement(" class Class { method ( ) { } }");
+	Tests.run(function testGenerateClassMembers() {
+		assertGenerateSingleStatement(" class Class { get getter( ) { } method ( ) { } }");
+
+		assertGenerateSingleStatement(
+			" class Class { @ annotation1 @ annotation2 static get getter ( ) { } }",
+			" class Class {/*  @ annotation1 @ annotation2 */ static get getter ( ) { } }"
+		);
+
 		assertGenerateSingleStatement(
 			" class Class { @ annotation1 @ annotation2 static method ( a , b ) { } }",
 			" class Class {/*  @ annotation1 @ annotation2 */ static method ( a , b ) { } }"
@@ -553,13 +559,37 @@
 		);
 	});
 
-	Tests.run(function testGenerateHtmlMethod() {
+	Tests.run(function testGenerateHtmlClassMembers() {
 		assertGenerateHtmlStatement(
-			" class Class { method ( ) { } }",
+			" class Class { get getter ( ) { } method ( ) { } }",
 			" <span class=\"keyword\">class</span>"
 			+" <span class=\"identifier\">Class</span>"
 			+" <span class=\"punctuator\">{</span>"
+			+" <span class=\"keyword\">get</span>"
+			+" <span class=\"identifier\">getter</span>"
+			+" <span class=\"punctuator\">(</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"punctuator\">{</span>"
+			+" <span class=\"punctuator\">}</span>"
 			+" <span class=\"identifier\">method</span>"
+			+" <span class=\"punctuator\">(</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"punctuator\">{</span>"
+			+" <span class=\"punctuator\">}</span>"
+			+" <span class=\"punctuator\">}</span>"
+		);
+		assertGenerateHtmlStatement(
+			" class Class { @ annotation1 @ annotation2 static get getter ( ) { } }",
+			" <span class=\"keyword\">class</span>"
+			+" <span class=\"identifier\">Class</span>"
+			+" <span class=\"punctuator\">{</span>"
+			+" <span class=\"punctuator\">@</span>"
+			+" <span class=\"identifier\">annotation1</span>"
+			+" <span class=\"punctuator\">@</span>"
+			+" <span class=\"identifier\">annotation2</span>"
+			+" <span class=\"keyword\">static</span>"
+			+" <span class=\"keyword\">get</span>"
+			+" <span class=\"identifier\">getter</span>"
 			+" <span class=\"punctuator\">(</span>"
 			+" <span class=\"punctuator\">)</span>"
 			+" <span class=\"punctuator\">{</span>"
@@ -1123,8 +1153,12 @@
 		);
 	});
 
-	Tests.run(function testGenerateCoverageMethod() {
-		assertGenerateCoverageStatement(" class Class { method ( ) { } }");
+	Tests.run(function testGenerateCoverageClassMembers() {
+		assertGenerateCoverageStatement(" class Class { get getter ( ) { } method ( ) { } }");
+		assertGenerateCoverageStatement(
+			" class Class { @ annotation1 @ annotation2 static get getter ( ) { } }",
+			" class Class {/*  @ annotation1 @ annotation2 */ static get getter ( ) { } }"
+		);
 		assertGenerateCoverageStatement(
 			" class Class { @ annotation1 @ annotation2 static method ( a , b ) { } }",
 			" class Class {/*  @ annotation1 @ annotation2 */ static method ( a , b ) { } }"
@@ -1452,16 +1486,64 @@
 		+"}").classTree;
 
 		Assertions.assertEqual(tree.members.size, 1);
-		Assertions.assertEqual(tree.members.get("f"), tree.memberTrees[0]);
+		Assertions.assertEqual(tree.members.get("f").method, tree.memberTrees[0]);
 		Assertions.assertEqual(tree.statics.size, 1);
-		Assertions.assertEqual(tree.statics.get("f"), tree.memberTrees[1]);
+		Assertions.assertEqual(tree.statics.get("f").method, tree.memberTrees[1]);
+
+
+		parseSingleStatementWithDiagnostics("class C {\n"
+			+"get f() {}\n"
+			+"get f() {}\n"
+		+"}")
+		.assertDiagnostic(25, 26, "redefinition of getter 'f'")
+		.assertNoMoreDiagnostic();
+
+
+		parseSingleStatementWithDiagnostics("class C {\n"
+			+"f() {}\n"
+			+"get f() {}\n"
+		+"}")
+		.assertDiagnostic(21, 22, "'f' was previously defined as a method")
+		.assertNoMoreDiagnostic();
+
+
+		parseSingleStatementWithDiagnostics("class C {\n"
+			+"static get f() {}\n"
+			+"static get f() {}\n"
+		+"}")
+		.assertDiagnostic(39, 40, "redefinition of static getter 'f'")
+		.assertNoMoreDiagnostic();
+
+
+		parseSingleStatementWithDiagnostics("class C {\n"
+			+"static f() {}\n"
+			+"static get f() {}\n"
+		+"}")
+		.assertDiagnostic(35, 36, "'f' was previously defined as a static method")
+		.assertNoMoreDiagnostic();
+
+
+		parseSingleStatementWithDiagnostics("class C {\n"
+			+"get f() {}\n"
+			+"f() {}\n"
+		+"}")
+		.assertDiagnostic(21, 22, "'f' was previously defined as getter/setter")
+		.assertNoMoreDiagnostic();
 
 
 		parseSingleStatementWithDiagnostics("class C {\n"
 			+"f() {}\n"
 			+"f() {}\n"
 		+"}")
-		.assertDiagnostic(17, 18, "redefinition of 'f'")
+		.assertDiagnostic(17, 18, "redefinition of method 'f'")
+		.assertNoMoreDiagnostic();
+
+
+		parseSingleStatementWithDiagnostics("class C {\n"
+			+"static get f() {}\n"
+			+"static f() {}\n"
+		+"}")
+		.assertDiagnostic(35, 36, "'f' was previously defined as static getter/setter")
 		.assertNoMoreDiagnostic();
 
 
@@ -1469,7 +1551,7 @@
 			+"static f() {}\n"
 			+"static f() {}\n"
 		+"}")
-		.assertDiagnostic(31, 32, "redefinition of static 'f'")
+		.assertDiagnostic(31, 32, "redefinition of static method 'f'")
 		.assertNoMoreDiagnostic();
 	});
 
@@ -1479,6 +1561,12 @@
 
 		const tree2=parseSingleStatement("{ class C { f() {} } class D extends C {} new D().f(); }");
 		Assertions.assertEqual(tree2.statementTrees[2].expressionTree.operand, tree2.statementTrees[0].classTree.members.get("f"));
+
+		const tree3=parseSingleStatement("{ class C { get f() {} } new C().f(); }");
+		Assertions.assertEqual(tree3.statementTrees[1].expressionTree.operand, tree3.statementTrees[0].classTree.members.get("f"));
+
+		const tree4=parseSingleStatement("{ class C { f() {} } class D extends C {} new D().f(); }");
+		Assertions.assertEqual(tree4.statementTrees[2].expressionTree.operand, tree4.statementTrees[0].classTree.members.get("f"));
 
 		parseSingleStatementWithDiagnostics("{ class C {} new C().f(); }")
 		.assertDiagnostic(21, 22, "cannot resolve 'f'")
@@ -1490,8 +1578,11 @@
 	});
 
 	Tests.run(function testClassStaticsResolution() {
-		const tree=parseSingleStatement("{ class C { static f() {} } C.f(); }");
-		Assertions.assertEqual(tree.statementTrees[1].expressionTree.operand, tree.statementTrees[0].classTree.statics.get("f"));
+		const tree1=parseSingleStatement("{ class C { static f() {} } C.f(); }");
+		Assertions.assertEqual(tree1.statementTrees[1].expressionTree.operand, tree1.statementTrees[0].classTree.statics.get("f"));
+
+		const tree2=parseSingleStatement("{ class C { static get f() {} } C.f(); }");
+		Assertions.assertEqual(tree2.statementTrees[1].expressionTree.operand, tree2.statementTrees[0].classTree.statics.get("f"));
 
 		parseSingleStatementWithDiagnostics("{ class C {} C.f(); }")
 		.assertDiagnostic(15, 16, "cannot resolve 'f'")
@@ -1511,7 +1602,7 @@
 
 		const trees2=parseSingleStatement("{ class C { f() {} } class D extends C { f() { super.f; } } }").statementTrees;
 		Assertions.assertEqual(
-			trees2[1].classTree.memberTrees[0].blockTree.statementTrees[0].expressionTree.element,
+			trees2[1].classTree.memberTrees[0].blockTree.statementTrees[0].expressionTree.element.method,
 			trees2[0].classTree.memberTrees[0]
 		);
 	});
@@ -1521,7 +1612,7 @@
 		Assertions.assertEqual(tree.memberTrees[0].blockTree.statementTrees[0].expressionTree.declaration.classTree, tree);
 
 		const methodTree=parseSingleStatement("class C { f() { this.f; } }").classTree.memberTrees[0];
-		Assertions.assertEqual(methodTree.blockTree.statementTrees[0].expressionTree.element, methodTree);
+		Assertions.assertEqual(methodTree.blockTree.statementTrees[0].expressionTree.element.method, methodTree);
 	});
 
 	Tests.run(function testCircularClassReference() {
@@ -1650,6 +1741,12 @@
 	Tests.run(function testAssignClassExpression() {
 		parseSingleStatementWithDiagnostics("(class {})=0;")
 			.assertDiagnostic(10, 11, "left operand is not assignable")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testAssignClassPropertyExpression() {
+		parseSingleStatementWithDiagnostics("new class { get getter() { return 0; } }().getter=0;")
+			.assertDiagnostic(49, 50, "left operand is not assignable")
 			.assertNoMoreDiagnostic();
 	});
 
