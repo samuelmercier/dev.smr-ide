@@ -1654,6 +1654,14 @@
 		.assertNoMoreDiagnostic();
 	});
 
+	Tests.run(function testClassConstructorSuperResolution() {
+		const tree=parseSingleStatement("{ class C { constructor() {} } class D extends C { constructor() { super(); } } }");
+		Assertions.assertEqual(
+			tree.statementTrees[1].classTree.memberTrees[0].blockTree.statementTrees[0].expressionTree.operandTree.declaration,
+			tree.statementTrees[0].classTree.memberTrees[0]
+		);
+	});
+
 	Tests.run(function testClassMethodResolution() {
 		const tree1=parseSingleStatement("{ class C { f() {} } new C().f(); }");
 		const method1=tree1.statementTrees[0].classTree.members.get("f");

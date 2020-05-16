@@ -336,7 +336,12 @@ function defineJavascriptTrees(Compiler) {
 		resolve(analyzer) {
 			this.vars.set("arguments", new Compiler.Javascript.Element.Declaration.Arguments());
 			if(this.classTree.baseClass!==undefined)
-				this.vars.set("super", new Compiler.Javascript.Element.Expression.InstanceReference(this.classTree.baseClass));
+				if(this.staticToken!==undefined||this.nameToken.text!=="constructor")
+					this.vars.set("super", new Compiler.Javascript.Element.Expression.InstanceReference(this.classTree.baseClass));
+				else if(this.classTree.baseClass.initializer!==undefined)
+					this.vars.set("super", this.classTree.baseClass.initializer);
+				else
+					this.vars.set("super", Compiler.Javascript.Element.Declaration.Invalid);
 			this.vars.set("this",new Compiler.Javascript.Element.Expression.InstanceReference(this.classTree));
 			this.vars.set(this.nameToken.text, this);
 			this.blockTree.resolve(analyzer);
@@ -351,6 +356,16 @@ function defineJavascriptTrees(Compiler) {
 			this.parametersTree.generate(generator);
 			this.blockTree.generate(generator);
 		}
+
+		/* *** semantic part. *** */
+
+		isAssignable() { return false; }
+
+		isClass() { return false; }
+
+		getFunction() { return this; }
+
+		isFunction() { return true; }
 
 	});
 
