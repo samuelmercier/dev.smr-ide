@@ -96,6 +96,12 @@
 		assertGenerateSingleStatement(" ++ a ;");
 	});
 
+	Tests.run(function testGenerateExpressionPrefixNew() {
+		assertGenerateSingleStatement(" new a ;");
+		assertGenerateSingleStatement(" new a ( ) ;");
+		assertGenerateSingleStatement(" new a ( a , b ) ;");
+	});
+
 	Tests.run(function testGenerateExpressionScopeAccess() {
 		assertGenerateSingleStatement(" a ;");
 	});

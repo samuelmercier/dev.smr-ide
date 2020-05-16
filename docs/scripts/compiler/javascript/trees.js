@@ -1338,6 +1338,15 @@ function defineJavascriptTrees(Compiler) {
 			}
 		}
 
+		generate(generator) {
+			generator.generate(this.operatorToken);
+			this.operandTree.generate(generator);
+			generator.generate(this.openParenthesisToken);
+			if(this.argumentsTree!==undefined)
+				this.argumentsTree.generate(generator);
+			generator.generate(this.closeParenthesisToken);
+		}
+
 	});
 
 	Trees.Expression.PrefixSpread=Object.freeze(class PrefixSpreadExpression extends Trees.Expression.Prefix {
