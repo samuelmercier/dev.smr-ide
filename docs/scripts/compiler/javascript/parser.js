@@ -79,14 +79,14 @@ function defineJavascriptParser(Compiler) {
 		"let", "long",
 		"new", "null",
 		"package", "private", "protected", "public",
-		"return", "short", "static", "switch", "synchronized",
+		"return", "set", "short", "static", "switch", "synchronized",
 		"this", "throw", "transient", "true", "try", "typeof",
 		"var", "void", "volatile", "while", "with",
 		"yield"
 	]);
 
 	/** keywords allowed as member name (after a dot). */
-	const memberNameKeywords=new Set([ "for", "get", "return", "this", "throw" ]);
+	const memberNameKeywords=new Set([ "for", "get", "return", "set", "this", "throw" ]);
 
 	/** operands. */
 	const operandKeywords=new Set([ "class", "false", "function", "null", "this", "true" ]);
@@ -473,6 +473,33 @@ function defineJavascriptParser(Compiler) {
 							annotationsTree,
 							staticToken,
 							getToken,
+							parseFunctionParameters(expectPunctuator("(")),
+							parseBlock(undefined, expectPunctuator("{"))
+						));
+					continue;
+				}
+				const setToken=checkKeyword("set");
+				if(setToken!==undefined) {
+					/* strictly speaking a member definition starting with set is a setter but we allow
+					set as valid method name to properly handle the source definition of Map.set. */
+					let keywordToken=checkKeywords(memberNameKeywords);
+					const nameToken=keywordToken!==undefined ? keywordToken : checkIdentifier();
+					if(nameToken!==undefined)
+						memberTrees.push(new Compiler.JavascriptTrees.ClassSetter(
+							annotationsTree,
+							staticToken,
+							setToken,
+							nameToken,
+							expectPunctuator("("),
+							new Compiler.JavascriptTrees.ClassSetterParameter(expectIdentifier()),
+							expectPunctuator(")"),
+							parseBlock(undefined, expectPunctuator("{"))
+						));
+					else
+						memberTrees.push(new Compiler.JavascriptTrees.ClassMethod(
+							annotationsTree,
+							staticToken,
+							setToken,
 							parseFunctionParameters(expectPunctuator("(")),
 							parseBlock(undefined, expectPunctuator("{"))
 						));

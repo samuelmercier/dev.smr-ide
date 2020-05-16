@@ -105,11 +105,16 @@
 	});
 
 	Tests.run(function testGenerateClassMembers() {
-		assertGenerateSingleStatement(" class Class { get getter( ) { } method ( ) { } }");
+		assertGenerateSingleStatement(" class Class { get getter( ) { } set setter ( parameter ) { } method ( ) { } }");
 
 		assertGenerateSingleStatement(
 			" class Class { @ annotation1 @ annotation2 static get getter ( ) { } }",
 			" class Class {/*  @ annotation1 @ annotation2 */ static get getter ( ) { } }"
+		);
+
+		assertGenerateSingleStatement(
+			" class Class { @ annotation1 @ annotation2 static set setter ( parameter ) { } }",
+			" class Class {/*  @ annotation1 @ annotation2 */ static set setter ( parameter ) { } }"
 		);
 
 		assertGenerateSingleStatement(
@@ -561,13 +566,20 @@
 
 	Tests.run(function testGenerateHtmlClassMembers() {
 		assertGenerateHtmlStatement(
-			" class Class { get getter ( ) { } method ( ) { } }",
+			" class Class { get getter ( ) { } set setter ( parameter ) { } method ( ) { } }",
 			" <span class=\"keyword\">class</span>"
 			+" <span class=\"identifier\">Class</span>"
 			+" <span class=\"punctuator\">{</span>"
 			+" <span class=\"keyword\">get</span>"
 			+" <span class=\"identifier\">getter</span>"
 			+" <span class=\"punctuator\">(</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"punctuator\">{</span>"
+			+" <span class=\"punctuator\">}</span>"
+			+" <span class=\"keyword\">set</span>"
+			+" <span class=\"identifier\">setter</span>"
+			+" <span class=\"punctuator\">(</span>"
+			+" <span class=\"identifier\">parameter</span>"
 			+" <span class=\"punctuator\">)</span>"
 			+" <span class=\"punctuator\">{</span>"
 			+" <span class=\"punctuator\">}</span>"
@@ -591,6 +603,25 @@
 			+" <span class=\"keyword\">get</span>"
 			+" <span class=\"identifier\">getter</span>"
 			+" <span class=\"punctuator\">(</span>"
+			+" <span class=\"punctuator\">)</span>"
+			+" <span class=\"punctuator\">{</span>"
+			+" <span class=\"punctuator\">}</span>"
+			+" <span class=\"punctuator\">}</span>"
+		);
+		assertGenerateHtmlStatement(
+			" class Class { @ annotation1 @ annotation2 static set setter ( parameter ) { } }",
+			" <span class=\"keyword\">class</span>"
+			+" <span class=\"identifier\">Class</span>"
+			+" <span class=\"punctuator\">{</span>"
+			+" <span class=\"punctuator\">@</span>"
+			+" <span class=\"identifier\">annotation1</span>"
+			+" <span class=\"punctuator\">@</span>"
+			+" <span class=\"identifier\">annotation2</span>"
+			+" <span class=\"keyword\">static</span>"
+			+" <span class=\"keyword\">set</span>"
+			+" <span class=\"identifier\">setter</span>"
+			+" <span class=\"punctuator\">(</span>"
+			+" <span class=\"identifier\">parameter</span>"
 			+" <span class=\"punctuator\">)</span>"
 			+" <span class=\"punctuator\">{</span>"
 			+" <span class=\"punctuator\">}</span>"
@@ -1160,6 +1191,10 @@
 			" class Class {/*  @ annotation1 @ annotation2 */ static get getter ( ) { } }"
 		);
 		assertGenerateCoverageStatement(
+			" class Class { @ annotation1 @ annotation2 static set setter ( parameter ) { } }",
+			" class Class {/*  @ annotation1 @ annotation2 */ static set setter ( parameter ) { } }"
+		);
+		assertGenerateCoverageStatement(
 			" class Class { @ annotation1 @ annotation2 static method ( a , b ) { } }",
 			" class Class {/*  @ annotation1 @ annotation2 */ static method ( a , b ) { } }"
 		);
@@ -1481,14 +1516,30 @@
 
 	Tests.run(function testClassMembersRegistration() {
 		const tree=parseSingleStatement("class C {\n"
+			+"get property() {}\n"
+			+"set property(parameter) {}\n"
+			+"get() {}\n"
+			+"set() {}\n"
 			+"f() {}\n"
+			+"static get property() {}\n"
+			+"static set property(parameter) {}\n"
+			+"static get() {}\n"
+			+"static set() {}\n"
 			+"static f() {}\n"
 		+"}").classTree;
 
-		Assertions.assertEqual(tree.members.size, 1);
-		Assertions.assertEqual(tree.members.get("f").method, tree.memberTrees[0]);
-		Assertions.assertEqual(tree.statics.size, 1);
-		Assertions.assertEqual(tree.statics.get("f").method, tree.memberTrees[1]);
+		Assertions.assertEqual(tree.members.size, 4);
+		Assertions.assertEqual(tree.members.get("property").getter, tree.memberTrees[0]);
+		Assertions.assertEqual(tree.members.get("property").setter, tree.memberTrees[1]);
+		Assertions.assertEqual(tree.members.get("get").method, tree.memberTrees[2]);
+		Assertions.assertEqual(tree.members.get("set").method, tree.memberTrees[3]);
+		Assertions.assertEqual(tree.members.get("f").method, tree.memberTrees[4]);
+		Assertions.assertEqual(tree.statics.size, 4);
+		Assertions.assertEqual(tree.statics.get("property").getter, tree.memberTrees[5]);
+		Assertions.assertEqual(tree.statics.get("property").setter, tree.memberTrees[6]);
+		Assertions.assertEqual(tree.statics.get("get").method, tree.memberTrees[7]);
+		Assertions.assertEqual(tree.statics.get("set").method, tree.memberTrees[8]);
+		Assertions.assertEqual(tree.statics.get("f").method, tree.memberTrees[9]);
 
 
 		parseSingleStatementWithDiagnostics("class C {\n"
@@ -1502,6 +1553,22 @@
 		parseSingleStatementWithDiagnostics("class C {\n"
 			+"f() {}\n"
 			+"get f() {}\n"
+		+"}")
+		.assertDiagnostic(21, 22, "'f' was previously defined as a method")
+		.assertNoMoreDiagnostic();
+
+
+		parseSingleStatementWithDiagnostics("class C {\n"
+			+"set f(parameter) {}\n"
+			+"set f(parameter) {}\n"
+		+"}")
+		.assertDiagnostic(34, 35, "redefinition of setter 'f'")
+		.assertNoMoreDiagnostic();
+
+
+		parseSingleStatementWithDiagnostics("class C {\n"
+			+"f() {}\n"
+			+"set f(parameter) {}\n"
 		+"}")
 		.assertDiagnostic(21, 22, "'f' was previously defined as a method")
 		.assertNoMoreDiagnostic();
@@ -1524,10 +1591,34 @@
 
 
 		parseSingleStatementWithDiagnostics("class C {\n"
+			+"static set f(parameter) {}\n"
+			+"static set f(parameter) {}\n"
+		+"}")
+		.assertDiagnostic(48, 49, "redefinition of static setter 'f'")
+		.assertNoMoreDiagnostic();
+
+
+		parseSingleStatementWithDiagnostics("class C {\n"
+			+"static f() {}\n"
+			+"static set f(parameter) {}\n"
+		+"}")
+		.assertDiagnostic(35, 36, "'f' was previously defined as a static method")
+		.assertNoMoreDiagnostic();
+
+
+		parseSingleStatementWithDiagnostics("class C {\n"
 			+"get f() {}\n"
 			+"f() {}\n"
 		+"}")
 		.assertDiagnostic(21, 22, "'f' was previously defined as getter/setter")
+		.assertNoMoreDiagnostic();
+
+
+		parseSingleStatementWithDiagnostics("class C {\n"
+			+"set f(parameter) {}\n"
+			+"f() {}\n"
+		+"}")
+		.assertDiagnostic(30, 31, "'f' was previously defined as getter/setter")
 		.assertNoMoreDiagnostic();
 
 
@@ -1548,6 +1639,14 @@
 
 
 		parseSingleStatementWithDiagnostics("class C {\n"
+			+"static set f(parameter) {}\n"
+			+"static f() {}\n"
+		+"}")
+		.assertDiagnostic(44, 45, "'f' was previously defined as static getter/setter")
+		.assertNoMoreDiagnostic();
+
+
+		parseSingleStatementWithDiagnostics("class C {\n"
 			+"static f() {}\n"
 			+"static f() {}\n"
 		+"}")
@@ -1555,19 +1654,41 @@
 		.assertNoMoreDiagnostic();
 	});
 
-	Tests.run(function testClassMembersResolution() {
+	Tests.run(function testClassMethodResolution() {
 		const tree1=parseSingleStatement("{ class C { f() {} } new C().f(); }");
-		Assertions.assertEqual(tree1.statementTrees[1].expressionTree.operand, tree1.statementTrees[0].classTree.members.get("f"));
+		const method1=tree1.statementTrees[0].classTree.members.get("f");
+		Assertions.assertEqual(tree1.statementTrees[1].expressionTree.operand, method1);
+		Assertions.assertEqual(tree1.statementTrees[0].classTree.memberTrees[0], method1.method);
 
 		const tree2=parseSingleStatement("{ class C { f() {} } class D extends C {} new D().f(); }");
-		Assertions.assertEqual(tree2.statementTrees[2].expressionTree.operand, tree2.statementTrees[0].classTree.members.get("f"));
+		const method2=tree2.statementTrees[0].classTree.members.get("f");
+		Assertions.assertEqual(tree2.statementTrees[2].expressionTree.operand, method2);
+		Assertions.assertEqual(tree2.statementTrees[0].classTree.memberTrees[0], method2.method);
+	});
 
-		const tree3=parseSingleStatement("{ class C { get f() {} } new C().f(); }");
-		Assertions.assertEqual(tree3.statementTrees[1].expressionTree.operand, tree3.statementTrees[0].classTree.members.get("f"));
+	Tests.run(function testClassGetterResolution() {
+		const tree1=parseSingleStatement("{ class C { get property() {} } new C().property(); }");
+		const entry1=tree1.statementTrees[0].classTree.members.get("property");
+		Assertions.assertEqual(tree1.statementTrees[1].expressionTree.operand, entry1);
+		Assertions.assertEqual(tree1.statementTrees[0].classTree.memberTrees[0], entry1.getter);
 
-		const tree4=parseSingleStatement("{ class C { f() {} } class D extends C {} new D().f(); }");
-		Assertions.assertEqual(tree4.statementTrees[2].expressionTree.operand, tree4.statementTrees[0].classTree.members.get("f"));
+		const tree2=parseSingleStatement("{ class C { method() {} } class D extends C {} new D().method(); }");
+		const entry2=tree2.statementTrees[0].classTree.members.get("method");
+		Assertions.assertEqual(tree2.statementTrees[0].classTree.memberTrees[0], entry2.method);
+		Assertions.assertEqual(tree2.statementTrees[2].expressionTree.operand, entry2);
+	});
 
+	Tests.run(function testClassSetterResolution() {
+		const tree1=parseSingleStatement("{ class C { set property(value) {} } new C().property(); }");
+		const property1=tree1.statementTrees[0].classTree.members.get("property");
+		Assertions.assertEqual(tree1.statementTrees[1].expressionTree.operand, property1);
+
+		const tree2=parseSingleStatement("{ class C { set property(value) {} } class D extends C {} new D().property(); }");
+		const property2=tree2.statementTrees[0].classTree.members.get("property");
+		Assertions.assertEqual(tree2.statementTrees[2].expressionTree.operand, property2);
+	});
+
+	Tests.run(function testClassMembersResolution() {
 		parseSingleStatementWithDiagnostics("{ class C {} new C().f(); }")
 		.assertDiagnostic(21, 22, "cannot resolve 'f'")
 		.assertNoMoreDiagnostic();

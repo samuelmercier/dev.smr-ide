@@ -198,6 +198,60 @@
 		Assertions.assertUndefined(tree.classTree.memberTrees[0].parametersTree.getMaxParameterCount());
 	});
 
+	Tests.run(function testParseExpressionClassSetter() {
+		const tree=parseSingleExpression("class", "class MyClass { set field(parameter) {} }").classTree;
+		Assertions.assertEqual(tree.memberTrees.length, 1);
+		Assertions.assertUndefined(tree.memberTrees[0].annotationsTree);
+		Assertions.assertUndefined(tree.memberTrees[0].staticToken);
+		assertKeyword(tree.memberTrees[0].setToken, "set");
+		assertIdentifier(tree.memberTrees[0].nameToken, "field");
+		assertPunctuator(tree.memberTrees[0].openParenthesisToken, "(");
+		assertIdentifier(tree.memberTrees[0].parameterTree.nameToken, "parameter");
+		assertPunctuator(tree.memberTrees[0].closeParenthesisToken, ")");
+		Assertions.assertEqual(tree.memberTrees[0].blockTree.kind(), "block");
+	});
+
+	/* strictly speaking a member definition starting with set is a setter but we allow
+	get as valid method name to properly handle the source definition of Map.get. */
+	Tests.run(function testParseExpressionClassSetMethod() {
+		const tree=parseSingleExpression("class", "class MyClass { set() {} }").classTree;
+		Assertions.assertEqual(tree.memberTrees.length, 1);
+		Assertions.assertUndefined(tree.memberTrees[0].annotationsTree);
+		Assertions.assertUndefined(tree.memberTrees[0].staticToken);
+		Assertions.assertUndefined(tree.memberTrees[0].setToken);
+		assertIdentifier(tree.memberTrees[0].nameToken, "set");
+		assertPunctuator(tree.memberTrees[0].parametersTree.openParenthesisToken, "(");
+		assertPunctuator(tree.memberTrees[0].parametersTree.closeParenthesisToken, ")");
+		Assertions.assertEqual(tree.memberTrees[0].blockTree.kind(), "block");
+	});
+
+	Tests.run(function testParseExpressionClassStaticSetter() {
+		const tree=parseSingleExpression("class", "class MyClass { @annotation static set field(parameter) {} }").classTree;
+		Assertions.assertEqual(tree.memberTrees.length, 1);
+		Assertions.assertEqual(tree.memberTrees[0].annotationsTree.annotationTrees.length, 1);
+		assertKeyword(tree.memberTrees[0].staticToken, "static");
+		assertKeyword(tree.memberTrees[0].setToken, "set");
+		assertIdentifier(tree.memberTrees[0].nameToken, "field");
+		assertPunctuator(tree.memberTrees[0].openParenthesisToken, "(");
+		assertIdentifier(tree.memberTrees[0].parameterTree.nameToken, "parameter");
+		assertPunctuator(tree.memberTrees[0].closeParenthesisToken, ")");
+		Assertions.assertEqual(tree.memberTrees[0].blockTree.kind(), "block");
+	});
+
+	/* strictly speaking a member definition starting with set is a setter but we allow
+	get as valid method name to properly handle the source definition of Map.get. */
+	Tests.run(function testParseExpressionClassStaticSetMethod() {
+		const tree=parseSingleExpression("class", "class MyClass { @annotation static set() {} }").classTree;
+		Assertions.assertEqual(tree.memberTrees.length, 1);
+		Assertions.assertEqual(tree.memberTrees[0].annotationsTree.annotationTrees.length, 1);
+		assertKeyword(tree.memberTrees[0].staticToken, "static");
+		Assertions.assertUndefined(tree.memberTrees[0].setToken);
+		assertIdentifier(tree.memberTrees[0].nameToken, "set");
+		assertPunctuator(tree.memberTrees[0].parametersTree.openParenthesisToken, "(");
+		assertPunctuator(tree.memberTrees[0].parametersTree.closeParenthesisToken, ")");
+		Assertions.assertEqual(tree.memberTrees[0].blockTree.kind(), "block");
+	});
+
 	Tests.run(function testParseExpressionFunction() {
 		const tree=parseSingleExpression("function", "function f(@optional a, b) { }");
 
@@ -330,6 +384,7 @@
 		assertIdentifier(parseSingleExpression("member-access", "expression.for").nameToken, "for");
 		assertIdentifier(parseSingleExpression("member-access", "expression.get").nameToken, "get");
 		assertIdentifier(parseSingleExpression("member-access", "expression.return").nameToken, "return");
+		assertIdentifier(parseSingleExpression("member-access", "expression.set").nameToken, "set");
 		assertIdentifier(parseSingleExpression("member-access", "expression.this").nameToken, "this");
 		assertIdentifier(parseSingleExpression("member-access", "expression.throw").nameToken, "throw");
 	});

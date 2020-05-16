@@ -308,7 +308,7 @@ function defineJavascriptTrees(Compiler) {
 					let entry=classTree.members.get(this.nameToken.text);
 					if(entry===undefined)
 						classTree.members.set(this.nameToken.text, entry=new Trees.ClassEntry());
-					if(entry.getter!==undefined)
+					if(entry.getter!==undefined||entry.setter!==undefined)
 						analyzer.newDiagnostic(this.nameToken, "'"+this.nameToken.text+"' was previously defined as getter/setter");
 					else if(entry.method!==undefined)
 						analyzer.newDiagnostic(this.nameToken, "redefinition of method '"+this.nameToken.text+"'");
@@ -320,7 +320,7 @@ function defineJavascriptTrees(Compiler) {
 				let entry=classTree.statics.get(this.nameToken.text);
 				if(entry===undefined)
 					classTree.statics.set(this.nameToken.text, entry=new Trees.ClassEntry());
-				if(entry.getter!==undefined)
+				if(entry.getter!==undefined||entry.setter!==undefined)
 					analyzer.newDiagnostic(this.nameToken, "'"+this.nameToken.text+"' was previously defined as static getter/setter");
 				else if(entry.method!==undefined)
 					analyzer.newDiagnostic(this.nameToken, "redefinition of static method '"+this.nameToken.text+"'");
@@ -353,6 +353,91 @@ function defineJavascriptTrees(Compiler) {
 		}
 
 	});
+
+	Trees.ClassSetter=Object.freeze(class Setter {
+
+		constructor(annotationsTree, staticToken, setToken, nameToken, openParenthesisToken, parameterTree, closeParenthesisToken, blockTree) {
+			this.annotationsTree=annotationsTree;
+			this.staticToken=staticToken;
+			this.setToken=setToken;
+			this.nameToken=nameToken;
+			this.openParenthesisToken=openParenthesisToken;
+			this.parameterTree=parameterTree;
+			this.closeParenthesisToken=closeParenthesisToken;
+			this.blockTree=blockTree;
+		}
+
+		kind() { return "class-setter-definition"; }
+
+		buildScope(analyzer, parentScope, classTree) {
+			this.classTree=classTree;
+			if(this.staticToken===undefined) {
+				let entry=classTree.members.get(this.nameToken.text);
+				if(entry===undefined)
+					classTree.members.set(this.nameToken.text, entry=new Trees.ClassEntry());
+				if(entry.setter!==undefined)
+					analyzer.newDiagnostic(this.nameToken, "redefinition of setter '"+this.nameToken.text+"'");
+				else if(entry.method!==undefined)
+					analyzer.newDiagnostic(this.nameToken, "'"+this.nameToken.text+"' was previously defined as a method");
+				else
+					entry.setter=this;
+			}
+			else {
+				let entry=classTree.statics.get(this.nameToken.text);
+				if(entry===undefined)
+					classTree.statics.set(this.nameToken.text, entry=new Trees.ClassEntry());
+				if(entry.setter!==undefined)
+					analyzer.newDiagnostic(this.nameToken, "redefinition of static setter '"+this.nameToken.text+"'");
+				else if(entry.method!==undefined)
+					analyzer.newDiagnostic(this.nameToken, "'"+this.nameToken.text+"' was previously defined as a static method");
+				else
+					entry.setter=this;
+			}
+			this.vars=new Map();
+			this.vars.set(this.nameToken.text, this);
+			this.vars.set(this.parameterTree.nameToken.text, this.parameterTree);
+			Object.freeze(this);
+			this.blockTree.buildScope(analyzer, new Scope.Function(parentScope, this));
+		}
+
+		resolve(analyzer) {
+			this.vars.set("arguments", new Compiler.Javascript.Element.Declaration.Arguments());
+			if(this.classTree.baseClass!==undefined)
+				this.vars.set("super", new Compiler.Javascript.Element.Expression.InstanceReference(this.classTree.baseClass));
+			this.vars.set("this",new Compiler.Javascript.Element.Expression.InstanceReference(this.classTree));
+			this.blockTree.resolve(analyzer);
+		}
+
+		generate(generator) {
+			if(this.annotationsTree!==undefined)
+				this.annotationsTree.generate(generator);
+			if(this.staticToken!==undefined)
+				generator.generate(this.staticToken);
+			generator.generate(this.setToken);
+			generator.generate(this.nameToken);
+			generator.generate(this.openParenthesisToken);
+			generator.generate(this.parameterTree.nameToken);
+			generator.generate(this.closeParenthesisToken);
+			this.blockTree.generate(generator);
+		}
+
+	});
+
+	Trees.ClassSetterParameter=class ClassSetterParameter {
+
+		constructor(nameToken) {
+			this.nameToken=nameToken;
+		}
+
+		/* *** semantic part. *** */
+
+		isClass() { return undefined; }
+
+		isFunction() { return undefined; }
+
+		resolveMemberAccess(analyzer, nameToken) { return undefined; }
+
+	};
 
 	Trees.Declarator=class Declarator {
 
