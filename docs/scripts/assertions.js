@@ -11,6 +11,8 @@ const Assertions=Object.freeze({
 		throw new Error("expected '"+expected+"'; got no exception");
 	},
 	assertEqual:function(actual, expected) {
+		if(expected===undefined)
+			throw new Error("expected is undefined; use assertUndefined instead");
 		if(actual!==expected)
 			throw new Error("expected '"+expected+"'; got '"+actual+"'");
 	},

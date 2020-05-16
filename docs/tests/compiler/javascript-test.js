@@ -36,7 +36,7 @@
 
 		Assertions.assertEqual(scope.resolveContinue(continueToken, undefined), "parentContinue");
 		Assertions.assertEqual(scope.resolveContinue(continueToken, unresolvableToken), "parentContinue");
-		Assertions.assertEqual(scope.resolveContinue(continueToken, labelToken), undefined);
+		Assertions.assertUndefined(scope.resolveContinue(continueToken, labelToken));
 		assertDiagnostic(labelToken, "continue must be inside loop");
 
 		Assertions.assertEqual(scope.resolveScopeAccess("name"), "parentScopeAccess");
@@ -165,7 +165,7 @@
 
 		Assertions.assertEqual(scope.resolveContinue(continueToken, undefined), "parentContinue");
 		Assertions.assertEqual(scope.resolveContinue(continueToken, unresolvableToken), "parentContinue");
-		Assertions.assertEqual(scope.resolveContinue(continueToken, labelToken), undefined);
+		Assertions.assertUndefined(scope.resolveContinue(continueToken, labelToken));
 		assertDiagnostic(labelToken, "continue must be inside loop");
 
 		Assertions.assertEqual(scope.resolveScopeAccess("name"), "parentScopeAccess");
@@ -240,7 +240,7 @@
 
 		Assertions.assertEqual(scope.resolveContinue(continueToken, undefined), "parentContinue");
 		Assertions.assertEqual(scope.resolveContinue(continueToken, unresolvableToken), "parentContinue");
-		Assertions.assertEqual(scope.resolveContinue(continueToken, labelToken), undefined);
+		Assertions.assertUndefined(scope.resolveContinue(continueToken, labelToken));
 		assertDiagnostic(labelToken, "continue must be inside loop");
 
 		Assertions.assertEqual(scope.resolveScopeAccess("name"), "parentScopeAccess");
