@@ -483,6 +483,13 @@
 		assertIdentifier(tree.memberTrees[4].nameToken, "method");
 		Assertions.assertEqual(tree.memberTrees[4].parametersTree.parameterTrees.length, 0);
 		Assertions.assertEqual(tree.memberTrees[4].blockTree.statementTrees.length, 0);
+
+		assertIdentifier(parseSingleExpression("object-literal", "{ for: 0 }").memberTrees[0].keyToken, "for");
+		assertIdentifier(parseSingleExpression("object-literal", "{ get: 0 }").memberTrees[0].keyToken, "get");
+		assertIdentifier(parseSingleExpression("object-literal", "{ return: 0 }").memberTrees[0].keyToken, "return");
+		assertIdentifier(parseSingleExpression("object-literal", "{ set: 0 }").memberTrees[0].keyToken, "set");
+		assertIdentifier(parseSingleExpression("object-literal", "{ this: 0 }").memberTrees[0].keyToken, "this");
+		assertIdentifier(parseSingleExpression("object-literal", "{ throw: 0 }").memberTrees[0].keyToken, "throw");
 	});
 
 	Tests.run(function testParseLabel() {

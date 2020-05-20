@@ -863,7 +863,7 @@ function defineJavascriptParser(Compiler) {
 
 		function parseExpressionObjectLiteralMember(precedingCommaToken) {
 			let token;
-			if((token=checkIdentifier())!==undefined) {
+			if((token=checkKeywords(memberNameKeywords))!==undefined||(token=checkIdentifier())!==undefined) {
 				const openParenthesisToken=checkPunctuator("(");
 				return openParenthesisToken!==undefined
 					? new Compiler.JavascriptTrees.ObjectLiteralExpressionMethod(
