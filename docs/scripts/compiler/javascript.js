@@ -67,11 +67,9 @@ function defineJavascript() {
 			isFunction() { return false; }
 
 			resolveMemberAccess(analyzer, nameToken) {
-				for(let current=this.classTree; current!==undefined; current=current.baseClass) {
-					const member=current.members.get(nameToken.text);
-					if(member!==undefined)
-						return member;
-				}
+				const result=this.classTree.resolveInstanceMember(analyzer, nameToken.text);
+				if(result!==undefined)
+					return result;
 				analyzer.newDiagnostic(nameToken, "cannot resolve '"+nameToken.text+"'");
 				return undefined;
 			}

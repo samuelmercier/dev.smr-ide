@@ -181,6 +181,15 @@ function defineJavascriptTrees(Compiler) {
 			generator.generate(this.closeCurlyToken);
 		}
 
+		resolveInstanceMember(analyzer, name) {
+			const member=this.members.get(name);
+			if(member!==undefined)
+				return member;
+			if(this.baseClass!==undefined)
+				return this.baseClass.resolveInstanceMember(analyzer, name);
+			return undefined;
+		}
+
 		/* *** semantic part. *** */
 
 		isAssignable() { return false; }
@@ -1071,10 +1080,19 @@ function defineJavascriptTrees(Compiler) {
 		isFunction() { return false; }
 
 		resolveMemberAccess(analyzer, nameToken) {
-			const result=this.members.get(nameToken.text);
-			if(result===undefined)
-				analyzer.newDiagnostic(nameToken, "cannot resolve '"+nameToken.text+"'");
-			return result;
+			const member=this.members.get(nameToken.text);
+			if(member!==undefined)
+				return member;
+			const object=analyzer.resolveScopeAccess("Object");
+			if(object===undefined) {
+				analyzer.newDiagnostic(nameToken, "cannot resolve builtin 'Object'");
+				return undefined;
+			}
+			const builtin=object.resolveInstanceMember(analyzer, nameToken.text);
+			if(builtin!==undefined)
+				return builtin;
+			analyzer.newDiagnostic(nameToken, "cannot resolve '"+nameToken.text+"'");
+			return undefined;
 		}
 
 	});

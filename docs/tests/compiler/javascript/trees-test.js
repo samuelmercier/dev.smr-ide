@@ -1338,7 +1338,27 @@
 
 (function testAnalyze() {
 
-	const Scope={ resolveScopeAccess:function(memberName) { return memberName==="Object" ? { members:new Map() } : undefined; } };
+	const toString={};
+	const Object={
+		resolveInstanceMember(analyzer, name) {
+			switch(name) {
+			case "toString":
+				return toString;
+			default:
+				return undefined;
+			}
+		}
+	};
+	const Scope={
+		resolveScopeAccess:function(memberName) {
+			switch(memberName) {
+			case "Object":
+				return Object;
+			default:
+				return undefined;
+			}
+		}
+	};
 
 	function parseSingleStatement(input) {
 		const result=Compiler.parseJavascript("sourceId", input).buildScope(Scope);
@@ -1760,6 +1780,14 @@
 			.assertNoMoreDiagnostic();
 	});
 
+	Tests.run(function testObjectLiteralResolution() {
+		Assertions.assertEqual(parseSingleStatement("({}).toString;").expressionTree.element, toString);
+
+		parseSingleStatementWithDiagnostics("({}).unknown;")
+			.assertDiagnostic(5, 12, "cannot resolve 'unknown'")
+			.assertNoMoreDiagnostic();
+	});
+
 	Tests.run(function testObjectLiteralThisResolution() {
 		const tree=parseSingleStatement("({ f() { this; } });").expressionTree.operandTree;
 		Assertions.assertEqual(tree.memberTrees[0].blockTree.statementTrees[0].expressionTree.declaration, tree);
@@ -1847,7 +1875,16 @@
 
 (function testAnalyzeExpression() {
 
-	const Scope={ resolveScopeAccess:function(memberName) { return memberName==="Object" ? {} : undefined; } };
+	const Scope={
+		resolveScopeAccess:function(memberName) {
+			switch(memberName) {
+			case "Object":
+				return { resolveInstanceMember(analyzer, name) { return undefined; } };
+			default:
+				return undefined;
+			}
+		}
+	};
 
 	function parseSingleStatementWithDiagnostics(input) {
 		const result=Compiler.parseJavascript("sourceId", input).buildScope(Scope);
