@@ -1338,7 +1338,18 @@
 
 (function testAnalyze() {
 
+	const length={};
 	const toString={};
+	const Array={
+		resolveInstanceMember(analyzer, name) {
+			switch(name) {
+			case "length":
+				return length;
+			default:
+				return undefined;
+			}
+		}
+	};
 	const Object={
 		resolveInstanceMember(analyzer, name) {
 			switch(name) {
@@ -1352,6 +1363,8 @@
 	const Scope={
 		resolveScopeAccess:function(memberName) {
 			switch(memberName) {
+			case "Array":
+				return Array;
 			case "Object":
 				return Object;
 			default:
@@ -1538,6 +1551,14 @@
 	Tests.run(function testAnalyzeLabelResolveContinueInWhile() {
 		const tree=parseSingleStatement("while(true) { { continue; } }");
 		Assertions.assertEqual(tree.statementTree.statementTrees[0].statementTrees[0].statementTree, tree);
+	});
+
+	Tests.run(function testArrayLiteralResolution() {
+		Assertions.assertEqual(parseSingleStatement("[].length;").expressionTree.element, length);
+
+		parseSingleStatementWithDiagnostics("[].unknown;")
+			.assertDiagnostic(3, 10, "cannot resolve 'unknown'")
+			.assertNoMoreDiagnostic();
 	});
 
 	Tests.run(function testClassMembersRegistration() {
@@ -1878,6 +1899,8 @@
 	const Scope={
 		resolveScopeAccess:function(memberName) {
 			switch(memberName) {
+			case "Array":
+				return { resolveInstanceMember(analyzer, name) { return undefined; } };
 			case "Object":
 				return { resolveInstanceMember(analyzer, name) { return undefined; } };
 			default:
@@ -2383,7 +2406,8 @@
 	});
 
 	Tests.run(function testMemberAccessArrayLiteralExpression() {
-		parseSingleStatementWithDiagnostics("{ [].member; }")
+		parseSingleStatementWithDiagnostics("[].member;")
+			.assertDiagnostic(3, 9, "cannot resolve 'member'")
 			.assertNoMoreDiagnostic();
 	});
 

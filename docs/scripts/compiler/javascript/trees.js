@@ -661,6 +661,19 @@ function defineJavascriptTrees(Compiler) {
 
 		isFunction() { return false; }
 
+		resolveMemberAccess(analyzer, nameToken) {
+			const array=analyzer.resolveScopeAccess("Array");
+			if(array===undefined) {
+				analyzer.newDiagnostic(nameToken, "cannot resolve builtin 'Array'");
+				return undefined;
+			}
+			const builtin=array.resolveInstanceMember(analyzer, nameToken.text);
+			if(builtin!==undefined)
+				return builtin;
+			analyzer.newDiagnostic(nameToken, "cannot resolve '"+nameToken.text+"'");
+			return undefined;
+		}
+
 	});
 
 	Trees.Expression.Assign=Object.freeze(class AssignExpression extends Trees.Expression {
