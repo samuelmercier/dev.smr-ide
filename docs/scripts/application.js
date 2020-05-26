@@ -109,6 +109,7 @@ const System=defineSystem(function () {
 		+"	static fromCodePoint(...) {}\n"
 		+"	static raw(callSite, ...) {}\n\n"
 		+"	constructor(thing) {}\n\n"
+		+"	get length() {}\n\n"
 //		+"	[Symbol.iterator]() {}\n\n"
 		+"	charAt(index) {}\n"
 		+"	charCodeAt(index) {}\n"

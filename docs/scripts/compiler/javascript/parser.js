@@ -743,7 +743,7 @@ function defineJavascriptParser(Compiler) {
 			if((token=checkRegex())!==undefined)
 				return new Compiler.JavascriptTrees.Expression.Literal(token, token.value);
 			if((token=checkString())!==undefined)
-				return new Compiler.JavascriptTrees.Expression.Literal(token, token.value);
+				return new Compiler.JavascriptTrees.Expression.Literal.String(token, token.value);
 			if((token=checkPunctuators(operandPunctuators))!==undefined)
 				switch(token.text) {
 				case "[":

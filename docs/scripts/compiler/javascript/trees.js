@@ -985,7 +985,7 @@ function defineJavascriptTrees(Compiler) {
 
 	});
 
-	Trees.Expression.Literal=Object.freeze(class LiteralExpression extends Trees.Expression {
+	Trees.Expression.Literal=class LiteralExpression extends Trees.Expression {
 
 		constructor(token, value) {
 			super();
@@ -1014,7 +1014,32 @@ function defineJavascriptTrees(Compiler) {
 
 		isFunction() { return false; }
 
+	};
+
+	Trees.Expression.Literal.String=Object.freeze(class StringLiteralExpression extends Trees.Expression.Literal {
+
+		constructor(token, value) { super(token, value); }
+
+		kind() { return "string-literal"; }
+
+		/* *** semantic part. *** */
+
+		resolveMemberAccess(analyzer, nameToken) {
+			const string=analyzer.resolveScopeAccess("String");
+			if(string===undefined) {
+				analyzer.newDiagnostic(nameToken, "cannot resolve builtin 'String'");
+				return undefined;
+			}
+			const builtin=string.resolveInstanceMember(analyzer, nameToken.text);
+			if(builtin!==undefined)
+				return builtin;
+			analyzer.newDiagnostic(nameToken, "cannot resolve '"+nameToken.text+"'");
+			return undefined;
+		}
+
 	});
+
+	Object.freeze(Trees.Expression.Literal);
 
 	Trees.Expression.MemberAccess=Object.freeze(class MemberAccessExpression extends Trees.Expression {
 

@@ -362,8 +362,8 @@
 		Assertions.assertEqual(parseSingleExpression("literal", "1234.56").token.text, "1234.56");
 		Assertions.assertEqual(parseSingleExpression("literal", "1234.56").token.value, 1234.56);
 		Assertions.assertEqual(parseSingleExpression("literal", "/regex/").token.text, "/regex/");
-		Assertions.assertEqual(parseSingleExpression("literal", "\"string\"").token.text, "\"string\"");
-		Assertions.assertEqual(parseSingleExpression("literal", "\"string\"").token.value, "string");
+		Assertions.assertEqual(parseSingleExpression("string-literal", "\"string\"").token.text, "\"string\"");
+		Assertions.assertEqual(parseSingleExpression("string-literal", "\"string\"").token.value, "string");
 
 		assertKeyword(parseSingleExpression("literal", "false").token, "false");
 		assertKeyword(parseSingleExpression("literal", "null").token, "null");
