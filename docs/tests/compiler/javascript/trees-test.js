@@ -127,6 +127,16 @@
 			" class Class { @ annotation1 @ annotation2 static method ( a , b ) { } }",
 			" class Class {/*  @ annotation1 @ annotation2 */ static method ( a , b ) { } }"
 		);
+
+		assertGenerateSingleStatement(
+			" class Class { field; }",
+			" class Class {/*  field; */ }",
+		);
+
+		assertGenerateSingleStatement(
+			" class Class { @ annotation1 @ anotation2 static field: type; }",
+			" class Class {/*  @ annotation1 @ anotation2 static field: type; */ }",
+		);
 	});
 
 	Tests.run(function testGenerateSource() {
@@ -1587,26 +1597,94 @@
 			+"set property(parameter) {}\n"
 			+"get() {}\n"
 			+"set() {}\n"
-			+"f() {}\n"
+			+"field;\n"
+			+"method() {}\n"
 			+"static get property() {}\n"
 			+"static set property(parameter) {}\n"
 			+"static get() {}\n"
 			+"static set() {}\n"
-			+"static f() {}\n"
+			+"static field;\n"
+			+"static method() {}\n"
 		+"}").classTree;
 
-		Assertions.assertEqual(tree.members.size, 4);
+		Assertions.assertEqual(tree.members.size, 5);
 		Assertions.assertEqual(tree.members.get("property").getter, tree.memberTrees[0]);
 		Assertions.assertEqual(tree.members.get("property").setter, tree.memberTrees[1]);
 		Assertions.assertEqual(tree.members.get("get").method, tree.memberTrees[2]);
 		Assertions.assertEqual(tree.members.get("set").method, tree.memberTrees[3]);
-		Assertions.assertEqual(tree.members.get("f").method, tree.memberTrees[4]);
-		Assertions.assertEqual(tree.statics.size, 4);
-		Assertions.assertEqual(tree.statics.get("property").getter, tree.memberTrees[5]);
-		Assertions.assertEqual(tree.statics.get("property").setter, tree.memberTrees[6]);
-		Assertions.assertEqual(tree.statics.get("get").method, tree.memberTrees[7]);
-		Assertions.assertEqual(tree.statics.get("set").method, tree.memberTrees[8]);
-		Assertions.assertEqual(tree.statics.get("f").method, tree.memberTrees[9]);
+		Assertions.assertEqual(tree.members.get("field").field, tree.memberTrees[4]);
+		Assertions.assertEqual(tree.members.get("method").method, tree.memberTrees[5]);
+		Assertions.assertEqual(tree.statics.size, 5);
+		Assertions.assertEqual(tree.statics.get("property").getter, tree.memberTrees[6]);
+		Assertions.assertEqual(tree.statics.get("property").setter, tree.memberTrees[7]);
+		Assertions.assertEqual(tree.statics.get("get").method, tree.memberTrees[8]);
+		Assertions.assertEqual(tree.statics.get("set").method, tree.memberTrees[9]);
+		Assertions.assertEqual(tree.statics.get("field").field, tree.memberTrees[10]);
+		Assertions.assertEqual(tree.statics.get("method").method, tree.memberTrees[11]);
+
+
+		parseSingleStatementWithDiagnostics("class C {\n"
+			+"f;\n"
+			+"f;\n"
+		+"}")
+		.assertDiagnostic(13, 14, "redefinition of field 'f'")
+		.assertNoMoreDiagnostic();
+
+
+		parseSingleStatementWithDiagnostics("class C {\n"
+			+"get f() {}\n"
+			+"f;\n"
+		+"}")
+		.assertDiagnostic(21, 22, "'f' was previously defined as getter/setter")
+		.assertNoMoreDiagnostic();
+
+
+		parseSingleStatementWithDiagnostics("class C {\n"
+			+"set f(value) {}\n"
+			+"f;\n"
+		+"}")
+		.assertDiagnostic(26, 27, "'f' was previously defined as getter/setter")
+		.assertNoMoreDiagnostic();
+
+
+		parseSingleStatementWithDiagnostics("class C {\n"
+			+"f() {}\n"
+			+"f;\n"
+		+"}")
+		.assertDiagnostic(17, 18, "'f' was previously defined as a method")
+		.assertNoMoreDiagnostic();
+
+
+		parseSingleStatementWithDiagnostics("class C {\n"
+			+"static f;\n"
+			+"static f;\n"
+		+"}")
+		.assertDiagnostic(27, 28, "redefinition of static field 'f'")
+		.assertNoMoreDiagnostic();
+
+
+		parseSingleStatementWithDiagnostics("class C {\n"
+			+"static get f() {}\n"
+			+"static f;\n"
+		+"}")
+		.assertDiagnostic(35, 36, "'f' was previously defined as static getter/setter")
+		.assertNoMoreDiagnostic();
+
+
+		parseSingleStatementWithDiagnostics("class C {\n"
+			+"static set f(value) {}\n"
+			+"static f;\n"
+		+"}")
+		.assertDiagnostic(40, 41, "'f' was previously defined as static getter/setter")
+		.assertNoMoreDiagnostic();
+
+
+		parseSingleStatementWithDiagnostics("class C {\n"
+			+"static f() {}\n"
+			+"static f;\n"
+		+"}")
+		.assertDiagnostic(31, 32, "'f' was previously defined as a static method")
+		.assertNoMoreDiagnostic();
 
 
 		parseSingleStatementWithDiagnostics("class C {\n"
@@ -1614,6 +1692,14 @@
 			+"get f() {}\n"
 		+"}")
 		.assertDiagnostic(25, 26, "redefinition of getter 'f'")
+		.assertNoMoreDiagnostic();
+
+
+		parseSingleStatementWithDiagnostics("class C {\n"
+			+"f;\n"
+			+"get f() {}\n"
+		+"}")
+		.assertDiagnostic(17, 18, "'f' was previously defined as a field")
 		.assertNoMoreDiagnostic();
 
 
@@ -1634,6 +1720,14 @@
 
 
 		parseSingleStatementWithDiagnostics("class C {\n"
+			+"f;"
+			+"set f(parameter) {}\n"
+		+"}")
+		.assertDiagnostic(16, 17, "'f' was previously defined as a field")
+		.assertNoMoreDiagnostic();
+
+
+		parseSingleStatementWithDiagnostics("class C {\n"
 			+"f() {}\n"
 			+"set f(parameter) {}\n"
 		+"}")
@@ -1646,6 +1740,14 @@
 			+"static get f() {}\n"
 		+"}")
 		.assertDiagnostic(39, 40, "redefinition of static getter 'f'")
+		.assertNoMoreDiagnostic();
+
+
+		parseSingleStatementWithDiagnostics("class C {\n"
+			+"static f;\n"
+			+"static get f() {}\n"
+		+"}")
+		.assertDiagnostic(31, 32, "'f' was previously defined as a static field")
 		.assertNoMoreDiagnostic();
 
 
@@ -1666,10 +1768,26 @@
 
 
 		parseSingleStatementWithDiagnostics("class C {\n"
+			+"static f;"
+			+"static set f(parameter) {}\n"
+		+"}")
+		.assertDiagnostic(30, 31, "'f' was previously defined as a static field")
+		.assertNoMoreDiagnostic();
+
+
+		parseSingleStatementWithDiagnostics("class C {\n"
 			+"static f() {}\n"
 			+"static set f(parameter) {}\n"
 		+"}")
 		.assertDiagnostic(35, 36, "'f' was previously defined as a static method")
+		.assertNoMoreDiagnostic();
+
+
+		parseSingleStatementWithDiagnostics("class C {\n"
+			+"f;\n"
+			+"f() {}\n"
+		+"}")
+		.assertDiagnostic(13, 14, "'f' was previously defined as a field")
 		.assertNoMoreDiagnostic();
 
 
@@ -1694,6 +1812,14 @@
 			+"f() {}\n"
 		+"}")
 		.assertDiagnostic(17, 18, "redefinition of method 'f'")
+		.assertNoMoreDiagnostic();
+
+
+		parseSingleStatementWithDiagnostics("class C {\n"
+			+"static f;\n"
+			+"static f() {}\n"
+		+"}")
+		.assertDiagnostic(27, 28, "'f' was previously defined as a static field")
 		.assertNoMoreDiagnostic();
 
 
@@ -1959,9 +2085,19 @@
 			.assertNoMoreDiagnostic();
 	});
 
-	Tests.run(function testAssignClassPropertyExpression() {
+	Tests.run(function testAssignClassMembersExpression() {
+		parseSingleStatementWithDiagnostics("new class { f; }().f=0;")
+			.assertNoMoreDiagnostic();
+
 		parseSingleStatementWithDiagnostics("new class { get getter() { return 0; } }().getter=0;")
 			.assertDiagnostic(49, 50, "left operand is not assignable")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("new class { set setter(value) { return 0; } }().setter=0;")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("new class { f() {} }().f=0;")
+			.assertDiagnostic(24, 25, "left operand is not assignable")
 			.assertNoMoreDiagnostic();
 	});
 

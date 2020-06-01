@@ -186,6 +186,21 @@
 		Assertions.assertEqual(tree.memberTrees[0].blockTree.kind(), "block");
 	});
 
+	Tests.run(function testParseExpressionClassField() {
+		const tree1=parseSingleExpression("class", "class MyClass { field; }");
+		Assertions.assertUndefined(tree1.classTree.memberTrees[0].staticToken);
+		assertIdentifier(tree1.classTree.memberTrees[0].nameToken, "field");
+		Assertions.assertUndefined(tree1.classTree.memberTrees[0].typeTree);
+		assertPunctuator(tree1.classTree.memberTrees[0].semicolonToken, ";");
+
+		const tree2=parseSingleExpression("class", "class MyClass { static field: type; }");
+		assertIdentifier(tree2.classTree.memberTrees[0].staticToken, "static");
+		assertIdentifier(tree2.classTree.memberTrees[0].nameToken, "field");
+		assertPunctuator(tree2.classTree.memberTrees[0].typeTree.colonToken, ":");
+		assertIdentifier(tree2.classTree.memberTrees[0].typeTree.identifierToken, "type");
+		assertPunctuator(tree2.classTree.memberTrees[0].semicolonToken, ";");
+	});
+
 	Tests.run(function testParseExpressionClassMethod() {
 		const tree=parseSingleExpression("class", "class MyClass { method(@optional a, b) {} }");
 		Assertions.assertEqual(tree.classTree.memberTrees[0].parametersTree.getMinParameterCount(), 1);

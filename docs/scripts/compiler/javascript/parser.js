@@ -509,13 +509,23 @@ function defineJavascriptParser(Compiler) {
 				const nameToken=keywordToken!==undefined ? keywordToken : annotationsTree!==undefined||staticToken!==undefined ? expectIdentifier() : checkIdentifier();
 				if(nameToken===undefined)
 					return memberTrees;
-				memberTrees.push(new Compiler.JavascriptTrees.ClassMethod(
-					annotationsTree,
-					staticToken,
-					nameToken,
-					parseFunctionParameters(expectPunctuator("(")),
-					parseBlock(undefined, expectPunctuator("{"))
-				));
+				const openParenthesisToken=checkPunctuator("(");
+				if(openParenthesisToken!==undefined)
+					memberTrees.push(new Compiler.JavascriptTrees.ClassMethod(
+						annotationsTree,
+						staticToken,
+						nameToken,
+						parseFunctionParameters(openParenthesisToken),
+						parseBlock(undefined, expectPunctuator("{"))
+					));
+				else
+					memberTrees.push(new Compiler.JavascriptTrees.ClassField(
+						annotationsTree,
+						staticToken,
+						nameToken,
+						parseType(),
+						checkPunctuator(";")
+					));
 			}
 		}
 

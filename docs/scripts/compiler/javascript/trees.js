@@ -215,7 +215,7 @@ function defineJavascriptTrees(Compiler) {
 
 		/* *** semantic part. *** */
 
-		isAssignable() { return this.setter!==undefined; }
+		isAssignable() { return this.field!==undefined||this.setter!==undefined; }
 
 		isClass() { return this.method!==undefined ? false : undefined; }
 
@@ -226,6 +226,71 @@ function defineJavascriptTrees(Compiler) {
 		resolveMemberAccess(analyzer, nameToken) { return undefined; }
 
 	}),
+
+	Trees.ClassField=Object.freeze(class ClassField {
+
+		constructor(annotationsTree, staticToken, nameToken, typeTree, semicolonToken) {
+			this.annotationsTree=annotationsTree;
+			this.staticToken=staticToken;
+			this.nameToken=nameToken;
+			this.typeTree=typeTree;
+			this.semicolonToken=semicolonToken;
+		}
+
+		kind() { return "class-field-definition"; }
+
+		buildScope(analyzer, parentScope, classTree) {
+			if(this.staticToken===undefined) {
+				let entry=classTree.members.get(this.nameToken.text);
+				if(entry===undefined)
+					classTree.members.set(this.nameToken.text, entry=new Trees.ClassEntry());
+				if(entry.field!==undefined)
+					analyzer.newDiagnostic(this.nameToken, "redefinition of field '"+this.nameToken.text+"'");
+				else if(entry.getter!==undefined||entry.setter!==undefined)
+					analyzer.newDiagnostic(this.nameToken, "'"+this.nameToken.text+"' was previously defined as getter/setter");
+				else if(entry.method!==undefined)
+					analyzer.newDiagnostic(this.nameToken, "'"+this.nameToken.text+"' was previously defined as a method");
+				else
+					entry.field=this;
+			}
+			else {
+				let entry=classTree.statics.get(this.nameToken.text);
+				if(entry===undefined)
+					classTree.statics.set(this.nameToken.text, entry=new Trees.ClassEntry());
+				if(entry.field!==undefined)
+					analyzer.newDiagnostic(this.nameToken, "redefinition of static field '"+this.nameToken.text+"'");
+				else if(entry.getter!==undefined||entry.setter!==undefined)
+					analyzer.newDiagnostic(this.nameToken, "'"+this.nameToken.text+"' was previously defined as static getter/setter");
+				else if(entry.method!==undefined)
+					analyzer.newDiagnostic(this.nameToken, "'"+this.nameToken.text+"' was previously defined as a static method");
+				else
+					entry.field=this;
+			}
+			Object.freeze(this);
+		}
+
+		generate(generator) {
+			generator.commentIn();
+			if(this.annotationsTree!==undefined)
+				this.annotationsTree.generate(generator);
+			if(this.staticToken!==undefined)
+				generator.generate(this.staticToken);
+			generator.generate(this.nameToken);
+			if(this.typeTree!==undefined)
+				this.typeTree.generate(generator);
+			generator.generate(this.semicolonToken);
+			generator.commentOut();
+		}
+
+		resolve(analyzer) {}
+
+		/* *** semantic part. *** */
+
+		isAssignable() { return true; }
+
+		isClass() { return false; }
+
+	});
 
 	Trees.ClassGetter=Object.freeze(class Getter {
 
@@ -247,7 +312,9 @@ function defineJavascriptTrees(Compiler) {
 				let entry=classTree.members.get(this.nameToken.text);
 				if(entry===undefined)
 					classTree.members.set(this.nameToken.text, entry=new Trees.ClassEntry());
-				if(entry.getter!==undefined)
+				if(entry.field!==undefined)
+					analyzer.newDiagnostic(this.nameToken, "'"+this.nameToken.text+"' was previously defined as a field");
+				else if(entry.getter!==undefined)
 					analyzer.newDiagnostic(this.nameToken, "redefinition of getter '"+this.nameToken.text+"'");
 				else if(entry.method!==undefined)
 					analyzer.newDiagnostic(this.nameToken, "'"+this.nameToken.text+"' was previously defined as a method");
@@ -258,7 +325,9 @@ function defineJavascriptTrees(Compiler) {
 				let entry=classTree.statics.get(this.nameToken.text);
 				if(entry===undefined)
 					classTree.statics.set(this.nameToken.text, entry=new Trees.ClassEntry());
-				if(entry.getter!==undefined)
+				if(entry.field!==undefined)
+					analyzer.newDiagnostic(this.nameToken, "'"+this.nameToken.text+"' was previously defined as a static field");
+				else if(entry.getter!==undefined)
 					analyzer.newDiagnostic(this.nameToken, "redefinition of static getter '"+this.nameToken.text+"'");
 				else if(entry.method!==undefined)
 					analyzer.newDiagnostic(this.nameToken, "'"+this.nameToken.text+"' was previously defined as a static method");
@@ -317,7 +386,9 @@ function defineJavascriptTrees(Compiler) {
 					let entry=classTree.members.get(this.nameToken.text);
 					if(entry===undefined)
 						classTree.members.set(this.nameToken.text, entry=new Trees.ClassEntry());
-					if(entry.getter!==undefined||entry.setter!==undefined)
+					if(entry.field!==undefined)
+						analyzer.newDiagnostic(this.nameToken, "'"+this.nameToken.text+"' was previously defined as a field");
+					else if(entry.getter!==undefined||entry.setter!==undefined)
 						analyzer.newDiagnostic(this.nameToken, "'"+this.nameToken.text+"' was previously defined as getter/setter");
 					else if(entry.method!==undefined)
 						analyzer.newDiagnostic(this.nameToken, "redefinition of method '"+this.nameToken.text+"'");
@@ -329,7 +400,9 @@ function defineJavascriptTrees(Compiler) {
 				let entry=classTree.statics.get(this.nameToken.text);
 				if(entry===undefined)
 					classTree.statics.set(this.nameToken.text, entry=new Trees.ClassEntry());
-				if(entry.getter!==undefined||entry.setter!==undefined)
+				if(entry.field!==undefined)
+					analyzer.newDiagnostic(this.nameToken, "'"+this.nameToken.text+"' was previously defined as a static field");
+				else if(entry.getter!==undefined||entry.setter!==undefined)
 					analyzer.newDiagnostic(this.nameToken, "'"+this.nameToken.text+"' was previously defined as static getter/setter");
 				else if(entry.method!==undefined)
 					analyzer.newDiagnostic(this.nameToken, "redefinition of static method '"+this.nameToken.text+"'");
@@ -399,7 +472,9 @@ function defineJavascriptTrees(Compiler) {
 				let entry=classTree.members.get(this.nameToken.text);
 				if(entry===undefined)
 					classTree.members.set(this.nameToken.text, entry=new Trees.ClassEntry());
-				if(entry.setter!==undefined)
+				if(entry.field!==undefined)
+					analyzer.newDiagnostic(this.nameToken, "'"+this.nameToken.text+"' was previously defined as a field");
+				else if(entry.setter!==undefined)
 					analyzer.newDiagnostic(this.nameToken, "redefinition of setter '"+this.nameToken.text+"'");
 				else if(entry.method!==undefined)
 					analyzer.newDiagnostic(this.nameToken, "'"+this.nameToken.text+"' was previously defined as a method");
@@ -410,7 +485,9 @@ function defineJavascriptTrees(Compiler) {
 				let entry=classTree.statics.get(this.nameToken.text);
 				if(entry===undefined)
 					classTree.statics.set(this.nameToken.text, entry=new Trees.ClassEntry());
-				if(entry.setter!==undefined)
+				if(entry.field!==undefined)
+					analyzer.newDiagnostic(this.nameToken, "'"+this.nameToken.text+"' was previously defined as a static field");
+				else if(entry.setter!==undefined)
 					analyzer.newDiagnostic(this.nameToken, "redefinition of static setter '"+this.nameToken.text+"'");
 				else if(entry.method!==undefined)
 					analyzer.newDiagnostic(this.nameToken, "'"+this.nameToken.text+"' was previously defined as a static method");
@@ -2622,6 +2699,11 @@ function defineJavascriptTrees(Compiler) {
 			this.colonToken=colonToken;
 			this.identifierToken=identifierToken;
 			Object.freeze(this);
+		}
+
+		generate(generator) {
+			generator.generate(this.colonToken);
+			generator.generate(this.identifierToken);
 		}
 
 	});
