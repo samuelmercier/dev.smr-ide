@@ -1779,13 +1779,15 @@ function defineJavascriptTrees(Compiler) {
 			if(name==="arguments")
 				analyzer.newDiagnostic(this.nameToken, "'arguments' can't be defined or assigned to");
 			else
-				parameters.set(name, this.nameToken);
+				parameters.set(name, this);
 			return Object.freeze(parameters);
 		}
 
 		generate(generator) { generator.generate(this.nameToken); }
 
 		/*** semantic part. *** */
+
+		resolveMemberAccess(analyzer, nameToken) { return undefined; }
 
 		getMaxParameterCount() { return 1; }
 

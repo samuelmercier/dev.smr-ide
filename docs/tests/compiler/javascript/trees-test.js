@@ -2605,6 +2605,14 @@
 			.assertNoMoreDiagnostic();
 	});
 
+	Tests.run(function testMemberAccessLambdaParameterExpression() {
+		parseSingleStatementWithDiagnostics("(param)=>param.member;")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("param=>param.member;")
+			.assertNoMoreDiagnostic();
+	});
+
 	Tests.run(function testMemberAccessLiteralExpression() {
 		parseSingleStatementWithDiagnostics("(1).member;")
 			.assertNoMoreDiagnostic();
