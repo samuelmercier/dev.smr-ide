@@ -121,6 +121,10 @@ function defineJavascriptTrees(Compiler) {
 
 		resolve(analyzer) { this.blockTree.resolve(analyzer); }
 
+		/* *** semantic part *** */
+
+		resolveMemberAccess(analyzer, nameToken) { return undefined; }
+
 	}),
 
 	Trees.Class=Object.freeze(class Class {

@@ -2572,6 +2572,11 @@
 			.assertNoMoreDiagnostic();
 	});
 
+	Tests.run(function testMemberAccessCatch() {
+		parseSingleStatementWithDiagnostics("try { } catch(e) { e.member; }")
+			.assertNoMoreDiagnostic();
+	});
+
 	Tests.run(function testMemberAccessClassExpression() {
 		parseSingleStatementWithDiagnostics("(class {}).member;")
 			.assertDiagnostic(11, 17, "cannot resolve 'member'")
