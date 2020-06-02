@@ -14,7 +14,7 @@ const Coverage=function() {
 			runtime.window.document.head.appendChild(System.gui.createElement("link", undefined, {
 				rel:"stylesheet",
 				type:"text/css",
-				href:window.location.origin+"/styles/application.css"
+				href:window.location.origin+window.location.pathname+(window.location.pathname.endsWith("/") ? "" : "/")+"styles/application.css"
 			}));
 
 			const coverages=new Map();
