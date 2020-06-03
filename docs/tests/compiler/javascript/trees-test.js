@@ -2142,6 +2142,11 @@
 			.assertNoMoreDiagnostic();
 	});
 
+	Tests.run(function testAssignLambdaParameterExpression() {
+		parseSingleStatementWithDiagnostics("parameter=>parameter=0;")
+			.assertNoMoreDiagnostic();
+	});
+
 	Tests.run(function testAssignLiteralExpression() {
 		parseSingleStatementWithDiagnostics("0=0;")
 			.assertDiagnostic(1, 2, "left operand is not assignable")
@@ -2468,6 +2473,11 @@
 			.assertNoMoreDiagnostic();
 		parseSingleStatementWithDiagnostics("((a)=>undefined)();")
 			.assertDiagnostic(16, 17, "expected at least 1 argument(s); got 0")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testInvocationLambdaParameterExpression() {
+		parseSingleStatementWithDiagnostics("parameter=>parameter();")
 			.assertNoMoreDiagnostic();
 	});
 
@@ -2830,6 +2840,14 @@
 			.assertNoMoreDiagnostic();
 		parseSingleStatementWithDiagnostics("new (()=>undefined)();")
 			.assertDiagnostic(0, 3, "operand is not a class")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testNewLambdaParameterExpression() {
+		parseSingleStatementWithDiagnostics("parameter=>new parameter;")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("parameter=>new parameter();")
 			.assertNoMoreDiagnostic();
 	});
 
