@@ -337,14 +337,26 @@ function defineJavascriptParser(Compiler) {
 		function checkRegex() {
 			if(input.charCodeAt(offset)!==47) // '
 				return undefined;
-			for(const start=offset++; ; offset+=input.charCodeAt(offset)===92&&offset+1<input.length ? 2 : 1)
-				if(offset>input.length||input.charCodeAt(offset)===10) {
-					newDiagnostic(start, input.length, "syntax error: unterminated regex constant");
+			let level=0;
+			for(const start=offset++; ; offset+=input.charCodeAt(offset)===92&&offset+1<input.length ? 2 : 1) {
+				if(offset>=input.length||input.charCodeAt(offset)===10) {
+					newDiagnostic(start, offset, "syntax error: unterminated regex constant");
 					const result=new Compiler.JavascriptTrees.Token.Regex(source, trivias, lines.length, start, input.substring(start), undefined);
 					scanTrivia();
 					return result;
 				}
-				else if(input.charCodeAt(offset)===47) {
+				switch(input.charCodeAt(offset)) {
+				case 91: // [
+					if(level===0)
+						level+=1;
+					continue;
+				case 93: // ]
+					if(level===1)
+						level-=1;
+					continue;
+				case 47: // /
+					if(level!==0)
+						continue;
 					const flags=offset;
 					for(; input.charCodeAt(++offset)===103||input.charCodeAt(offset)===105||input.charCodeAt(offset)===109; ); // g or i or m
 					let regex=undefined;
@@ -357,6 +369,7 @@ function defineJavascriptParser(Compiler) {
 					scanTrivia();
 					return result;
 				}
+			}
 		}
 
 		function checkString() {

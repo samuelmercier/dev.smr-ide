@@ -835,6 +835,12 @@
 			.assertNoMoreDiagnostic();
 	});
 
+	Tests.run(function testScanRegex() {
+		assertToken(Compiler.parseJavascript("sourceId", " / a /;").statementTrees[0].expressionTree.token, "regex", "/ a /", undefined);
+		assertToken(Compiler.parseJavascript("sourceId", " / a \\/ /;").statementTrees[0].expressionTree.token, "regex", "/ a \\/ /", undefined);
+		assertToken(Compiler.parseJavascript("sourceId", " / [[/]] /;").statementTrees[0].expressionTree.token, "regex", "/ [[/]] /", undefined);
+	});
+
 	Tests.run(function testScanUnterminatedCharacterConstantMustFail() {
 		assertDiagnostics(Compiler.parseJavascript("sourceId", " ' \n;"))
 			.assertDiagnostic(1, 3, "syntax error: unterminated character constant")
@@ -843,6 +849,28 @@
 		assertDiagnostics(Compiler.parseJavascript("sourceId", " ' ;"))
 			.assertDiagnostic(1, 4, "syntax error: unterminated character constant")
 			.assertDiagnostic(4, 4, "syntax error: expected ';'")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testScanUnterminatedRegexConstantMustFail() {
+		assertDiagnostics(Compiler.parseJavascript("sourceId", " / a \n"))
+			.assertDiagnostic(1, 5, "syntax error: unterminated regex constant")
+			.assertDiagnostic(6, 6, "syntax error: expected ';'")
+			.assertNoMoreDiagnostic();
+
+		assertDiagnostics(Compiler.parseJavascript("sourceId", " / a "))
+			.assertDiagnostic(1, 5, "syntax error: unterminated regex constant")
+			.assertDiagnostic(5, 5, "syntax error: expected ';'")
+			.assertNoMoreDiagnostic();
+
+		assertDiagnostics(Compiler.parseJavascript("sourceId", " / a \\"))
+			.assertDiagnostic(1, 6, "syntax error: unterminated regex constant")
+			.assertDiagnostic(6, 6, "syntax error: expected ';'")
+			.assertNoMoreDiagnostic();
+
+		assertDiagnostics(Compiler.parseJavascript("sourceId", " / a ^"))
+			.assertDiagnostic(1, 6, "syntax error: unterminated regex constant")
+			.assertDiagnostic(6, 6, "syntax error: expected ';'")
 			.assertNoMoreDiagnostic();
 	});
 
