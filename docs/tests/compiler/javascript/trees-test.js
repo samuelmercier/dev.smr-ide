@@ -2106,6 +2106,11 @@
 			.assertNoMoreDiagnostic();
 	});
 
+	Tests.run(function testAssignClassSetterParameterExpression() {
+		parseSingleStatementWithDiagnostics("(class { set setter(value) { value=0; } });")
+			.assertNoMoreDiagnostic();
+	});
+
 	Tests.run(function testAssignFunctionExpression() {
 		parseSingleStatementWithDiagnostics("(function() {})=0;")
 			.assertDiagnostic(15, 16, "left operand is not assignable")

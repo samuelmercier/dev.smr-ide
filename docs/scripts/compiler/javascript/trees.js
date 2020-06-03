@@ -542,6 +542,8 @@ function defineJavascriptTrees(Compiler) {
 
 		/* *** semantic part. *** */
 
+		isAssignable() { return true; }
+
 		isClass() { return undefined; }
 
 		isFunction() { return undefined; }
