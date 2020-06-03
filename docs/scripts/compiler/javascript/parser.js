@@ -74,19 +74,19 @@ function defineJavascriptParser(Compiler) {
 		"case", "char", "class", "const", "continue",
 		"debugger", "default", "do", "double",
 		"else", "eval", "false", "finally", "float", "for", "function",
-		"get", "goto",
+		"goto",
 		"if", "implements", "in", "instanceof", "int", "interface",
 		"let", "long",
 		"new", "null",
 		"package", "private", "protected", "public",
-		"return", "set", "short", "static", "switch", "synchronized",
+		"return", "short", "static", "switch", "synchronized",
 		"this", "throw", "transient", "true", "try", "typeof",
 		"var", "void", "volatile", "while", "with",
 		"yield"
 	]);
 
 	/** keywords allowed as member name (after a dot). */
-	const memberNameKeywords=new Set([ "finally", "for", "get", "return", "set", "this", "throw" ]);
+	const memberNameKeywords=new Set([ "finally", "for", "return", "this", "throw" ]);
 
 	/** operands. */
 	const operandKeywords=new Set([ "class", "false", "function", "null", "this", "true" ]);

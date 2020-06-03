@@ -398,9 +398,7 @@
 
 		assertIdentifier(parseSingleExpression("member-access", "expression.finally").nameToken, "finally");
 		assertIdentifier(parseSingleExpression("member-access", "expression.for").nameToken, "for");
-		assertIdentifier(parseSingleExpression("member-access", "expression.get").nameToken, "get");
 		assertIdentifier(parseSingleExpression("member-access", "expression.return").nameToken, "return");
-		assertIdentifier(parseSingleExpression("member-access", "expression.set").nameToken, "set");
 		assertIdentifier(parseSingleExpression("member-access", "expression.this").nameToken, "this");
 		assertIdentifier(parseSingleExpression("member-access", "expression.throw").nameToken, "throw");
 	});
@@ -509,9 +507,7 @@
 
 		assertIdentifier(parseSingleExpression("object-literal", "{ finally: 0 }").memberTrees[0].keyToken, "finally");
 		assertIdentifier(parseSingleExpression("object-literal", "{ for: 0 }").memberTrees[0].keyToken, "for");
-		assertIdentifier(parseSingleExpression("object-literal", "{ get: 0 }").memberTrees[0].keyToken, "get");
 		assertIdentifier(parseSingleExpression("object-literal", "{ return: 0 }").memberTrees[0].keyToken, "return");
-		assertIdentifier(parseSingleExpression("object-literal", "{ set: 0 }").memberTrees[0].keyToken, "set");
 		assertIdentifier(parseSingleExpression("object-literal", "{ this: 0 }").memberTrees[0].keyToken, "this");
 		assertIdentifier(parseSingleExpression("object-literal", "{ throw: 0 }").memberTrees[0].keyToken, "throw");
 	});
