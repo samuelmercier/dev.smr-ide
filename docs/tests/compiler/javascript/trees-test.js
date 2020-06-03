@@ -2079,6 +2079,11 @@
 			.assertNoMoreDiagnostic();
 	});
 
+	Tests.run(function testAssignCatchClauseExpression() {
+		parseSingleStatementWithDiagnostics("try { } catch(e) { e=0; }")
+			.assertNoMoreDiagnostic();
+	});
+
 	Tests.run(function testAssignClassExpression() {
 		parseSingleStatementWithDiagnostics("(class {})=0;")
 			.assertDiagnostic(10, 11, "left operand is not assignable")
@@ -2409,6 +2414,11 @@
 			.assertNoMoreDiagnostic();
 	});
 
+	Tests.run(function testInvocationCatchClauseExpression() {
+		parseSingleStatementWithDiagnostics("try { } catch(e) { e(); }")
+			.assertNoMoreDiagnostic();
+	});
+
 	Tests.run(function testInvocationClassExpression() {
 		parseSingleStatementWithDiagnostics("(class {})();")
 			.assertDiagnostic(10, 11, "cannot invoke operand")
@@ -2734,6 +2744,14 @@
 		parseSingleStatementWithDiagnostics("{ var a, b; new (a=b); }")
 			.assertNoMoreDiagnostic();
 		parseSingleStatementWithDiagnostics("{ var a, b; new (a=b)(); }")
+			.assertNoMoreDiagnostic();
+	});
+
+	Tests.run(function testNewCatchClauseExpression() {
+		parseSingleStatementWithDiagnostics("try { } catch(e) { new e; }")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics("try { } catch(e) { new e(); }")
 			.assertNoMoreDiagnostic();
 	});
 
