@@ -835,6 +835,15 @@
 			.assertNoMoreDiagnostic();
 	});
 
+	Tests.run(function testScanHexNumber() {
+		assertToken(Compiler.parseJavascript("sourceId", " 0x01234567;").statementTrees[0].expressionTree.token, "number", "0x01234567", 0x01234567);
+		assertToken(Compiler.parseJavascript("sourceId", " 0x89abcdef;").statementTrees[0].expressionTree.token, "number", "0x89abcdef", 0x89abcdef);
+
+		assertDiagnostics(Compiler.parseJavascript("sourceId", " 0xg;"))
+			.assertDiagnostic(3, 4, "syntax error: invalid digit in constant")
+			.assertNoMoreDiagnostic();
+	});
+
 	Tests.run(function testScanRegex() {
 		assertToken(Compiler.parseJavascript("sourceId", " / a /;").statementTrees[0].expressionTree.token, "regex", "/ a /", undefined);
 		assertToken(Compiler.parseJavascript("sourceId", " / a \\/ /;").statementTrees[0].expressionTree.token, "regex", "/ a \\/ /", undefined);

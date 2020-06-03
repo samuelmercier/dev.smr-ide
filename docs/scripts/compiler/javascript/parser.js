@@ -253,10 +253,36 @@ function defineJavascriptParser(Compiler) {
 			return result;
 		}
 
+		function parseDigit(code) {
+			if(code>=48&&code<=57) // 0..9
+				return code-48;
+			if(code>=65&&code<=70)
+				return code-65+10;
+			if(code>=97&&code<=102)
+				return code-97+10;
+			return 16;
+		}
+
 		function checkNumber() {
 			if(!isdigit(input.charCodeAt(offset)))
 				return undefined;
 			const start=offset;
+			if(input.charCodeAt(offset)===48) // 0
+				switch(input.charCodeAt(offset+1)) {
+				case 88: // X
+				case 120: // x
+					let hexvalue=0;
+					for(offset+=2; isident(input.charCodeAt(offset)); offset+=1) {
+						const digit=parseDigit(input.charCodeAt(offset));
+						if(digit>=16)
+							newDiagnostic(offset, offset+1, "syntax error: invalid digit in constant");
+						else
+							hexvalue=16*hexvalue+digit;
+					}
+					const result=new Compiler.JavascriptTrees.Token.Number(source, trivias, lines.length, start, input.substring(start, offset), hexvalue);
+					scanTrivia();
+					return result;
+				}
 			while(isident(input.charCodeAt(++offset)));
 			if(input.charCodeAt(offset)===46) // .
 				if(isalpha(input.charCodeAt(offset+1)))
