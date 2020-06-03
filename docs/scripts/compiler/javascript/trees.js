@@ -135,7 +135,8 @@ function defineJavascriptTrees(Compiler) {
 
 	Trees.Class=Object.freeze(class Class {
 
-		constructor(classToken, nameToken, extendsClauseTree, openCurlyToken, memberTrees, closeCurlyToken) {
+		constructor(annotationsTree, classToken, nameToken, extendsClauseTree, openCurlyToken, memberTrees, closeCurlyToken) {
+			this.annotationsTree=annotationsTree;
 			this.classToken=classToken;
 			this.nameToken=nameToken;
 			this.extendsClauseTree=extendsClauseTree;
@@ -211,7 +212,15 @@ function defineJavascriptTrees(Compiler) {
 
 		getConstructor() { return this.initializer; }
 
-		isFunction() { return false; }
+		getFunction() { return this.initializer; }
+
+		isFunction() {
+			if(this.initializer!==undefined&&this.annotationsTree!==undefined)
+				for(const annotationTree of this.annotationsTree.annotationTrees)
+					if(annotationTree.nameToken.text==="function")
+						return true;
+			return false;
+		}
 
 		resolveMemberAccess(analyzer, nameToken) {
 			const member=this.statics.get(nameToken.text);
@@ -821,7 +830,7 @@ function defineJavascriptTrees(Compiler) {
 
 		constructor(classToken, nameToken, extendsClauseTree, openCurlyToken, memberTrees, closeCurlyToken) {
 			super();
-			this.classTree=new Trees.Class(classToken, nameToken, extendsClauseTree, openCurlyToken, memberTrees, closeCurlyToken);
+			this.classTree=new Trees.Class(undefined, classToken, nameToken, extendsClauseTree, openCurlyToken, memberTrees, closeCurlyToken);
 			Object.freeze(this);
 		}
 
@@ -2021,7 +2030,7 @@ function defineJavascriptTrees(Compiler) {
 
 		constructor(annotationsTree, classToken, nameToken, extendsClauseTree, openCurlyToken, memberTrees, closeCurlyToken) {
 			this.annotationsTree=annotationsTree;
-			this.classTree=new Trees.Class(classToken, nameToken, extendsClauseTree, openCurlyToken, memberTrees, closeCurlyToken);
+			this.classTree=new Trees.Class(annotationsTree, classToken, nameToken, extendsClauseTree, openCurlyToken, memberTrees, closeCurlyToken);
 			Object.freeze(this);
 		}
 

@@ -467,8 +467,10 @@ function defineJavascriptParser(Compiler) {
 
 		function parseAnnotations() {
 			const annotationTrees=[];
-			for(let atToken; (atToken=checkPunctuator("@"))!==undefined; )
-				annotationTrees.push(new Compiler.JavascriptTrees.Annotation(atToken, expectIdentifier()));
+			for(let atToken; (atToken=checkPunctuator("@"))!==undefined; ) {
+				let token=checkKeyword("function");
+				annotationTrees.push(new Compiler.JavascriptTrees.Annotation(atToken, token!==undefined ? token : expectIdentifier()));
+			}
 			return Object.freeze(annotationTrees);
 		}
 

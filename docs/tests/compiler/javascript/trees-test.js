@@ -2438,6 +2438,15 @@
 			.assertNoMoreDiagnostic();
 	});
 
+	Tests.run(function testInvocationClassStatement() {
+		parseSingleStatementWithDiagnostics(" { class C {} C(); }")
+			.assertDiagnostic(15, 16, "cannot invoke operand")
+			.assertNoMoreDiagnostic();
+
+		parseSingleStatementWithDiagnostics(" { @function class C { constructor() {} } C(); }")
+			.assertNoMoreDiagnostic();
+	});
+
 	Tests.run(function testInvocationFunctionExpression() {
 		parseSingleStatementWithDiagnostics("(function() {})(0);")
 			.assertDiagnostic(15, 16, "expected at most 0 argument(s); got 1")
