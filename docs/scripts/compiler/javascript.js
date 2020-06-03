@@ -44,6 +44,8 @@ function defineJavascript() {
 
 			isAssignable() { return undefined; },
 
+			isClass() { return undefined; },
+
 			isFunction() { return undefined; },
 
 			resolveMemberAccess(nameToken) { return undefined; }

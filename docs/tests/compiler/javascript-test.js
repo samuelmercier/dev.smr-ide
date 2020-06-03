@@ -257,3 +257,16 @@
 	});
 
 })();
+
+(function testInvalid() {
+
+	Tests.run(function testInvalid() {
+		Assertions.assertEqual(Compiler.Javascript.Element.Declaration.Invalid.kind(), "invalid");
+		Assertions.assertEqual(Compiler.Javascript.Element.Declaration.Invalid.getName(), "<invalid>");
+		Assertions.assertUndefined(Compiler.Javascript.Element.Declaration.Invalid.isAssignable());
+		Assertions.assertUndefined(Compiler.Javascript.Element.Declaration.Invalid.isClass());
+		Assertions.assertUndefined(Compiler.Javascript.Element.Declaration.Invalid.isFunction());
+		Assertions.assertUndefined(Compiler.Javascript.Element.Declaration.Invalid.resolveMemberAccess(undefined));
+	});
+
+})();
