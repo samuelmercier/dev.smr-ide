@@ -1614,7 +1614,10 @@
 		Assertions.assertEqual(tree.members.get("set").method, tree.memberTrees[3]);
 		Assertions.assertEqual(tree.members.get("field").field, tree.memberTrees[4]);
 		Assertions.assertEqual(tree.members.get("method").method, tree.memberTrees[5]);
-		Assertions.assertEqual(tree.statics.size, 5);
+		Assertions.assertEqual(tree.statics.size, 8);
+		Assertions.assertEqual(tree.statics.get("length"), Compiler.Javascript.Element.Declaration.Invalid);
+		Assertions.assertEqual(tree.statics.get("name"), Compiler.Javascript.Element.Declaration.Invalid);
+		Assertions.assertEqual(tree.statics.get("prototype"), Compiler.Javascript.Element.Declaration.Invalid);
 		Assertions.assertEqual(tree.statics.get("property").getter, tree.memberTrees[6]);
 		Assertions.assertEqual(tree.statics.get("property").setter, tree.memberTrees[7]);
 		Assertions.assertEqual(tree.statics.get("get").method, tree.memberTrees[8]);

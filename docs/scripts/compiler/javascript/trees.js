@@ -151,6 +151,9 @@ function defineJavascriptTrees(Compiler) {
 				this.extendsClauseTree.baseClassExpressionTree.buildScope(analyzer, parentScope);
 			this.members=new Map();
 			this.statics=new Map();
+			this.statics.set("length", Compiler.Javascript.Element.Declaration.Invalid);
+			this.statics.set("name", Compiler.Javascript.Element.Declaration.Invalid);
+			this.statics.set("prototype", Compiler.Javascript.Element.Declaration.Invalid);
 			for(const memberTree of this.memberTrees)
 				memberTree.buildScope(analyzer, parentScope, this);
 		}
