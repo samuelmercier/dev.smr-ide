@@ -86,7 +86,7 @@ function defineJavascriptParser(Compiler) {
 	]);
 
 	/** keywords allowed as member name (after a dot). */
-	const memberNameKeywords=new Set([ "for", "get", "return", "set", "this", "throw" ]);
+	const memberNameKeywords=new Set([ "finally", "for", "get", "return", "set", "this", "throw" ]);
 
 	/** operands. */
 	const operandKeywords=new Set([ "class", "false", "function", "null", "this", "true" ]);
