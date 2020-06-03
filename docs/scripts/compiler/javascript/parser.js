@@ -886,7 +886,7 @@ function defineJavascriptParser(Compiler) {
 			}
 			if((token=checkNumber())!==undefined)
 				return Compiler.JavascriptTrees.newObjectLiteralExpressionNumberKeyPair(precedingCommaToken, token, expectPunctuator(":"), parseExpressionAssign());
-			if((token=checkString())!==undefined)
+			if((token=checkCharacter())!==undefined||(token=checkString())!==undefined)
 				return Compiler.JavascriptTrees.newObjectLiteralExpressionStringKeyPair(precedingCommaToken, token, expectPunctuator(":"), parseExpressionAssign());
 			if((token=checkPunctuator("["))!==undefined)
 				return new Compiler.JavascriptTrees.ObjectLiteralExpressionComputedKeyPair(

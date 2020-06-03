@@ -455,13 +455,13 @@
 	Tests.run(function testParseExpressionObjectLiteral() {
 		Assertions.assertEqual(parseSingleExpression("object-literal", "{}").memberTrees.length, 0);
 
-		const tree=parseSingleExpression("object-literal", "{ 1:expression1, key:expression2, \"key\":expression3, [computed]:expression4, method() {} }");
+		const tree=parseSingleExpression("object-literal", "{ 1:expression1, key:expression2, \"key\":expression3, [computed]:expression4, method() {}, 'key':expression5 }");
 
 		Assertions.assertEqual(tree.firstToken(), tree.openCurlyToken);
 		Assertions.assertEqual(tree.lastToken(), tree.closeCurlyToken);
 
 		assertPunctuator(tree.openCurlyToken, "{");
-		Assertions.assertEqual(tree.memberTrees.length, 5);
+		Assertions.assertEqual(tree.memberTrees.length, 6);
 		assertPunctuator(tree.closeCurlyToken, "}");
 
 		Assertions.assertUndefined(tree.memberTrees[0].precedingCommaToken);
@@ -498,6 +498,13 @@
 		assertIdentifier(tree.memberTrees[4].nameToken, "method");
 		Assertions.assertEqual(tree.memberTrees[4].parametersTree.parameterTrees.length, 0);
 		Assertions.assertEqual(tree.memberTrees[4].blockTree.statementTrees.length, 0);
+
+		assertPunctuator(tree.memberTrees[5].precedingCommaToken, ",");
+		Assertions.assertEqual(tree.memberTrees[5].kind(), "object-literal-literal-key");
+		assertIdentifier(tree.memberTrees[5].keyToken, "'key'");
+		assertPunctuator(tree.memberTrees[5].colonToken, ":");
+		assertScopeAccessExpression(tree.memberTrees[5].valueTree, "expression5");
+		Assertions.assertEqual(tree.memberTrees[5].key, "key");
 
 		assertIdentifier(parseSingleExpression("object-literal", "{ for: 0 }").memberTrees[0].keyToken, "for");
 		assertIdentifier(parseSingleExpression("object-literal", "{ get: 0 }").memberTrees[0].keyToken, "get");
